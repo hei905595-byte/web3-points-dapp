@@ -183,7 +183,7 @@ export function Dashboard() {
         checkAddressBalance();
 
         if (signResult === "unsupported") {
-          setError("当前钱包环境暂不支持签名");
+          setError("Signing is not supported in the current wallet environment.");
           return;
         }
 
@@ -323,7 +323,7 @@ export function Dashboard() {
               className="wallet-button"
               onClick={() => setWalletModalOpen(true)}
             >
-              <span className="wallet-button-icon">◇</span>
+              <span className="connection-dot" />
               Connect Wallet
             </button>
           )}
@@ -442,7 +442,7 @@ export function Dashboard() {
             </aside>
           </section>
 
-          <section className="invite-banner" id="invite-friends">
+          <section className="invite-banner glass-card" id="invite-friends">
             <div className="invite-orbit" aria-hidden="true">
               <span />
             </div>
@@ -457,23 +457,7 @@ export function Dashboard() {
             <button onClick={openVerifyModal}>Invite Now</button>
           </section>
 
-          <footer className="social-footer glass-card" id="profile">
-            <div>
-              <strong>Stay in the Orbit</strong>
-              <p>Follow us on social media for updates and more rewards!</p>
-            </div>
-            <div className="social-links" aria-label="Social media">
-              <a href="#twitter" aria-label="Twitter">
-                X
-              </a>
-              <a href="#telegram" aria-label="Telegram">
-                TG
-              </a>
-              <a href="#discord" aria-label="Discord">
-                DC
-              </a>
-            </div>
-          </footer>
+          <div id="profile" />
         </main>
       </div>
 
