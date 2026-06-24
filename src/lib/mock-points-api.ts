@@ -8,7 +8,6 @@ export interface PointTask {
     | "Community"
     | "Leaderboard";
   reward: number;
-  icon: string;
   completed: boolean;
 }
 
@@ -38,7 +37,6 @@ export function createInitialProfile(): PointsProfile {
         description: "Return each day and keep your Daily Streak active.",
         category: "Daily Check-in",
         reward: 60,
-        icon: "✓",
         completed: false,
       },
       {
@@ -47,7 +45,6 @@ export function createInitialProfile(): PointsProfile {
         description: "Complete today's activity list and grow your Points.",
         category: "Daily Tasks",
         reward: 120,
-        icon: "◎",
         completed: false,
       },
       {
@@ -56,7 +53,6 @@ export function createInitialProfile(): PointsProfile {
         description: "Invite friends to discover Orbit Points together.",
         category: "Community",
         reward: 180,
-        icon: "+",
         completed: false,
       },
       {
@@ -65,7 +61,6 @@ export function createInitialProfile(): PointsProfile {
         description: "Check the latest rankings and compare your progress.",
         category: "Leaderboard",
         reward: 40,
-        icon: "↗",
         completed: false,
       },
     ],

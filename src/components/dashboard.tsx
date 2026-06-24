@@ -2,6 +2,28 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  Activity,
+  ArrowUpRight,
+  BarChart3,
+  Check,
+  CheckCircle2,
+  CircleUserRound,
+  Flame,
+  Gift,
+  Grid2X2,
+  LockKeyhole,
+  Medal,
+  Orbit,
+  Rocket,
+  Sparkles,
+  Trophy,
+  UserPlus,
+  Users,
+  Wallet,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
+import {
   createInitialProfile,
   pointsApi,
   type PointsProfile,
@@ -16,13 +38,17 @@ import type { WalletKind, WalletProvider } from "@/types/wallet";
 import { VerifyModal } from "./verify-modal";
 import { WalletModal } from "./wallet-modal";
 
-const navigation = [
-  { label: "Dashboard", href: "#dashboard", icon: "grid" },
-  { label: "Daily Tasks", href: "#daily-tasks", icon: "check" },
-  { label: "Bonus Tasks", href: "#bonus-tasks", icon: "spark" },
-  { label: "Leaderboard", href: "#leaderboard", icon: "rank" },
-  { label: "Invite Friends", href: "#invite-friends", icon: "invite" },
-  { label: "Profile", href: "#profile", icon: "user" },
+const navigation: Array<{
+  label: string;
+  href: string;
+  icon: LucideIcon;
+}> = [
+  { label: "Dashboard", href: "#dashboard", icon: Grid2X2 },
+  { label: "Daily Tasks", href: "#daily-tasks", icon: CheckCircle2 },
+  { label: "Bonus Tasks", href: "#bonus-tasks", icon: Sparkles },
+  { label: "Leaderboard", href: "#leaderboard", icon: BarChart3 },
+  { label: "Invite Friends", href: "#invite-friends", icon: UserPlus },
+  { label: "Profile", href: "#profile", icon: CircleUserRound },
 ];
 
 interface LeaderboardMember {
@@ -40,50 +66,12 @@ const leaderboard: LeaderboardMember[] = [
   { name: "Ethan Park", points: 7920, color: "#10b981" },
 ];
 
-function NavIcon({ name }: { name: string }) {
-  const paths: Record<string, React.ReactNode> = {
-    grid: (
-      <>
-        <rect x="3" y="3" width="7" height="7" rx="2" />
-        <rect x="14" y="3" width="7" height="7" rx="2" />
-        <rect x="3" y="14" width="7" height="7" rx="2" />
-        <rect x="14" y="14" width="7" height="7" rx="2" />
-      </>
-    ),
-    check: (
-      <>
-        <circle cx="12" cy="12" r="9" />
-        <path d="m8 12 2.5 2.5L16 9" />
-      </>
-    ),
-    spark: <path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z" />,
-    rank: (
-      <>
-        <path d="M7 20v-6h4v6M14 20V9h4v11M3 20v-3h4v3" />
-        <path d="M4 11 9 6l4 3 6-6" />
-      </>
-    ),
-    invite: (
-      <>
-        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
-        <path d="M19 8v6M22 11h-6" />
-      </>
-    ),
-    user: (
-      <>
-        <circle cx="12" cy="8" r="4" />
-        <path d="M4 21a8 8 0 0 1 16 0" />
-      </>
-    ),
-  };
-
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      {paths[name]}
-    </svg>
-  );
-}
+const taskIcons: Record<string, LucideIcon> = {
+  "daily-check-in": CheckCircle2,
+  "daily-tasks": Zap,
+  "invite-friends": Users,
+  "view-leaderboard": Trophy,
+};
 
 function checkAddressBalance() {}
 
@@ -96,6 +84,8 @@ export function Dashboard() {
   const [walletBusy, setWalletBusy] = useState<WalletKind | null>(null);
   const [actionBusy, setActionBusy] = useState("");
   const [error, setError] = useState("");
+  const [uiReady, setUiReady] = useState(false);
+  const [network, setNetwork] = useState<"ETH" | "TRON" | "—">("—");
   const walletProviders = useRef<
     Partial<Record<WalletKind, WalletProvider>>
   >({});
@@ -103,6 +93,19 @@ export function Dashboard() {
   function openVerifyModal() {
     setVerifyModalOpen(true);
   }
+
+  useEffect(() => {
+    const timer =
+      typeof window !== "undefined"
+        ? window.setTimeout(() => setUiReady(true), 450)
+        : undefined;
+
+    return () => {
+      if (typeof window !== "undefined" && timer !== undefined) {
+        window.clearTimeout(timer);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -178,6 +181,14 @@ export function Dashboard() {
       }
 
       setAddress(nextAddress);
+      setNetwork(
+        kind === "tokenpocket" &&
+          typeof window !== "undefined" &&
+          !window.ethereum &&
+          Boolean(window.tronWeb)
+          ? "TRON"
+          : "ETH",
+      );
       try {
         const signResult = await signWalletLogin(kind, provider, nextAddress);
         checkAddressBalance();
@@ -210,6 +221,7 @@ export function Dashboard() {
     setAddress("");
     setProfile(null);
     setError("");
+    setNetwork("—");
   };
 
   const runTask = async (taskId: string) => {
@@ -233,35 +245,51 @@ export function Dashboard() {
   };
 
   const isConnected = Boolean(address);
-  const stats = [
+  const stats: Array<{
+    label: string;
+    value: string;
+    detail: string;
+    hint: string;
+    trend: string;
+    icon: LucideIcon;
+  }> = [
     {
       label: "Total Points",
       value: isConnected ? (profile?.balance ?? 0).toLocaleString() : "0",
-      detail: "Points",
-      icon: "✦",
+      detail: "Lifetime points earned",
+      hint: isConnected ? "Across all completed tasks" : "Connect to sync activity",
+      trend: isConnected ? "↑ 8.4%" : "—",
+      icon: Sparkles,
     },
     {
       label: "Tasks Completed",
       value: isConnected
         ? String(profile?.tasks.filter((task) => task.completed).length ?? 0)
         : "0",
-      detail: "Tasks",
-      icon: "✓",
+      detail: "Tasks completed",
+      hint: isConnected ? "Keep your momentum going" : "No activity recorded yet",
+      trend: isConnected ? "↑ 2" : "—",
+      icon: CheckCircle2,
     },
     {
       label: "Daily Streak",
       value: isConnected ? String(profile?.streak ?? 0) : "0",
-      detail: "Daily Check-in",
-      icon: "◇",
+      detail: "Consecutive active days",
+      hint: isConnected ? "Check in again tomorrow" : "Start your first streak",
+      trend: isConnected ? "↑ 1 day" : "—",
+      icon: Flame,
     },
     {
       label: "Rank",
       value: isConnected ? `#${profile?.rank ?? 0}` : "0",
-      detail: "Rank",
-      icon: "↗",
+      detail: "Community position",
+      hint: isConnected ? "Based on total points" : "Ranking unavailable",
+      trend: isConnected ? "↑ 14" : "—",
+      icon: Medal,
     },
   ];
   const tasks = profile?.tasks ?? createInitialProfile().tasks;
+  const isLoading = !uiReady || Boolean(walletBusy) || (isConnected && !profile);
   const leaderboardMembers: LeaderboardMember[] = [
     ...leaderboard,
     {
@@ -293,17 +321,19 @@ export function Dashboard() {
               key={item.label}
               onClick={() => setActiveSection(item.label)}
             >
-              <NavIcon name={item.icon} />
+              <item.icon aria-hidden="true" />
               <span>{item.label}</span>
             </a>
           ))}
         </nav>
 
         <div className="sidebar-card">
-          <span className="sidebar-card-icon">✦</span>
+          <span className="sidebar-card-icon">
+            <Orbit aria-hidden="true" />
+          </span>
           <strong>Orbit Points</strong>
-          <p>Complete Tasks and track your Rewards.</p>
-          <button onClick={openVerifyModal}>Profile</button>
+          <p>Complete community tasks and track your progress.</p>
+          <button onClick={openVerifyModal}>View Profile</button>
         </div>
       </aside>
 
@@ -314,30 +344,68 @@ export function Dashboard() {
             <h1>Orbit Points</h1>
           </div>
           {isConnected ? (
-            <button className="wallet-button connected" onClick={disconnect}>
-              <span className="connection-dot" />
-              {shortenAddress(address)}
-            </button>
+            <div className="wallet-account">
+              <button className="wallet-button connected" onClick={disconnect}>
+                <span className="connection-dot" />
+                {shortenAddress(address)}
+              </button>
+              <div className="wallet-preview">
+                <span className="wallet-preview-icon">
+                  <Wallet aria-hidden="true" />
+                </span>
+                <div>
+                  <small>Connected wallet</small>
+                  <strong>{shortenAddress(address)}</strong>
+                  <span>{network} network · Online</span>
+                </div>
+              </div>
+            </div>
           ) : (
             <button
               className="wallet-button"
               onClick={() => setWalletModalOpen(true)}
             >
-              <span className="connection-dot" />
+              <Wallet aria-hidden="true" />
               Connect Wallet
             </button>
           )}
         </header>
 
         <main className="dashboard-main" id="dashboard">
-          <section className="hero-card glass-card">
+          <section
+            className={`hero-card glass-card ${isLoading ? "is-loading" : ""}`}
+          >
             <div className="hero-copy">
               <span className="eyebrow">ORBIT POINTS DASHBOARD</span>
               <h2>Welcome to your Orbit</h2>
               <p>Track Points, complete Tasks, and view your Rank.</p>
-              <div className="season-chip">
-                <span />
-                Rewards active
+              <div className="hero-tags">
+                <span className={`identity-tag ${isConnected ? "online" : ""}`}>
+                  <CircleUserRound aria-hidden="true" />
+                  {isConnected ? shortenAddress(address) : "Guest"}
+                </span>
+                <span className="network-tag">
+                  <Activity aria-hidden="true" />
+                  {network} Network
+                </span>
+                <span className="season-chip">
+                  <span />
+                  Rewards active
+                </span>
+              </div>
+              <div className="hero-mini-stats">
+                <div>
+                  <small>Available tasks</small>
+                  <strong>{tasks.filter((task) => !task.completed).length}</strong>
+                </div>
+                <div>
+                  <small>Season progress</small>
+                  <strong>{isConnected ? "32%" : "0%"}</strong>
+                </div>
+                <div>
+                  <small>Next refresh</small>
+                  <strong>18h</strong>
+                </div>
               </div>
             </div>
             <div className="hero-visual" aria-hidden="true">
@@ -351,12 +419,29 @@ export function Dashboard() {
 
           <section className="stats-grid" aria-label="Points overview">
             {stats.map((stat) => (
-              <article className="glass-card stat-card" key={stat.label}>
-                <div className="stat-icon">{stat.icon}</div>
-                <div>
-                  <span>{stat.label}</span>
-                  <strong>{stat.value}</strong>
-                  <small>{stat.detail}</small>
+              <article
+                className={`glass-card stat-card ${
+                  isLoading ? "is-loading" : ""
+                }`}
+                key={stat.label}
+              >
+                <div className="stat-card-head">
+                  <div className="stat-icon">
+                    <stat.icon aria-hidden="true" />
+                  </div>
+                  <span className={`trend ${isConnected ? "positive" : ""}`}>
+                    {stat.trend}
+                  </span>
+                </div>
+                <div className="stat-content">
+                  <span className="stat-label">{stat.label}</span>
+                  {isLoading ? (
+                    <span className="skeleton skeleton-value" />
+                  ) : (
+                    <strong>{stat.value}</strong>
+                  )}
+                  <p>{stat.detail}</p>
+                  <small>{stat.hint}</small>
                 </div>
               </article>
             ))}
@@ -368,48 +453,88 @@ export function Dashboard() {
                 <div>
                   <span>DAILY TASKS</span>
                   <h3>Daily Tasks</h3>
+                  <p>Complete available activities to grow your points balance.</p>
                 </div>
                 <small>{isConnected ? "Connected" : "Connect Wallet"}</small>
               </div>
 
               <div className="task-list">
-                {tasks.map((task) => (
-                  <article
-                    className={`glass-card task-card ${
-                      task.completed ? "completed" : ""
-                    }`}
-                    id={task.id === "invite-friends" ? "bonus-tasks" : undefined}
-                    key={task.id}
-                  >
-                    <div className="task-symbol">{task.icon}</div>
-                    <div className="task-copy">
-                      <span>{task.category}</span>
-                      <h4>{task.title}</h4>
-                      <p>{task.description}</p>
-                    </div>
-                    <div className="task-action">
-                      <strong>+{task.reward} Points</strong>
-                      <button
-                        disabled={task.completed || actionBusy === task.id}
-                        onClick={() => runTask(task.id)}
-                      >
-                        {task.completed
-                          ? "Completed"
-                          : actionBusy === task.id
-                            ? "Starting..."
-                            : "Start"}
-                      </button>
-                    </div>
-                  </article>
-                ))}
+                {tasks.map((task) => {
+                  const status = task.completed
+                    ? "completed"
+                    : isConnected
+                      ? "available"
+                      : "locked";
+                  const TaskIcon = taskIcons[task.id] ?? Rocket;
+
+                  return (
+                    <article
+                      className={`glass-card task-card ${status} ${
+                        isLoading ? "is-loading" : ""
+                      }`}
+                      id={
+                        task.id === "invite-friends" ? "bonus-tasks" : undefined
+                      }
+                      key={task.id}
+                    >
+                      <div className="task-symbol">
+                        <TaskIcon aria-hidden="true" />
+                      </div>
+                      <div className="task-copy">
+                        <div className="task-meta">
+                          <span>{task.category}</span>
+                          <span className={`task-status ${status}`}>
+                            {status === "completed" ? (
+                              <Check aria-hidden="true" />
+                            ) : status === "locked" ? (
+                              <LockKeyhole aria-hidden="true" />
+                            ) : (
+                              <Zap aria-hidden="true" />
+                            )}
+                            {status}
+                          </span>
+                        </div>
+                        <h4>{task.title}</h4>
+                        <p>{task.description}</p>
+                      </div>
+                      <div className="task-action">
+                        <strong className="reward-badge">
+                          +{task.reward} Points
+                        </strong>
+                        <button
+                          disabled={
+                            task.completed ||
+                            actionBusy === task.id ||
+                            !isConnected
+                          }
+                          onClick={() => runTask(task.id)}
+                        >
+                          {task.completed
+                            ? "Completed"
+                            : actionBusy === task.id
+                              ? "Starting..."
+                              : status === "locked"
+                                ? "Locked"
+                                : "Start"}
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             </div>
 
-            <aside className="leaderboard-panel glass-card" id="leaderboard">
+            <aside
+              className={`leaderboard-panel glass-card ${
+                isLoading ? "is-loading" : ""
+              }`}
+              id="leaderboard"
+            >
               <div className="section-title">
                 <div>
                   <span>RANK</span>
                   <h3>Leaderboard</h3>
+                  <p>Top community contributors this season.</p>
                 </div>
                 <small>Points</small>
               </div>
@@ -417,10 +542,14 @@ export function Dashboard() {
               <div className="leaderboard-list">
                 {leaderboardMembers.map((member, index) => (
                   <div
-                    className={member.current ? "current-user" : ""}
+                    className={`${member.current ? "current-user" : ""} ${
+                      index < 3 ? `top-rank top-${index + 1}` : ""
+                    }`}
                     key={member.name}
                   >
-                    <span className="position">{index + 1}</span>
+                    <span className="position">
+                      {index < 3 ? <Medal aria-hidden="true" /> : index + 1}
+                    </span>
                     <span
                       className="avatar"
                       style={{ "--avatar": member.color } as React.CSSProperties}
@@ -429,10 +558,13 @@ export function Dashboard() {
                     </span>
                     <span className="member-name">
                       <strong>{member.name}</strong>
-                      <small>{member.current ? "Current Rank" : "Rank"}</small>
+                      <small>
+                        {member.current ? "YOU · Current rank" : `Rank ${index + 1}`}
+                      </small>
                     </span>
                     <strong className="member-points">
                       {member.points.toLocaleString()}
+                      <small> pts</small>
                     </strong>
                   </div>
                 ))}
@@ -442,22 +574,51 @@ export function Dashboard() {
             </aside>
           </section>
 
-          <section className="invite-banner glass-card" id="invite-friends">
+          <section
+            className={`invite-banner glass-card ${
+              isLoading ? "is-loading" : ""
+            }`}
+            id="invite-friends"
+          >
             <div className="invite-orbit" aria-hidden="true">
               <span />
             </div>
             <span className="invite-gift" aria-hidden="true">
-              ✦
+              <Gift aria-hidden="true" />
             </span>
             <div>
               <span className="eyebrow">INVITE FRIENDS</span>
               <h3>Invite Friends, Earn More!</h3>
               <p>Invite your friends and grow your Orbit Points.</p>
+              <small>Referral reward: +250 Points after their first task.</small>
             </div>
-            <button onClick={openVerifyModal}>Invite Now</button>
+            <button onClick={openVerifyModal}>
+              Invite Now
+              <ArrowUpRight aria-hidden="true" />
+            </button>
           </section>
 
-          <div id="profile" />
+          <footer className="product-footer glass-card" id="profile">
+            <div className="footer-brand">
+              <Orbit aria-hidden="true" />
+              <div>
+                <strong>Orbit Points — Web3 Task Dashboard</strong>
+                <small>Complete tasks, earn points, and grow your Orbit.</small>
+              </div>
+            </div>
+            <div className="footer-socials" aria-label="Social links">
+              <a href="#twitter">X</a>
+              <a href="#telegram">TG</a>
+              <a href="#discord">DC</a>
+            </div>
+            <div className="footer-status">
+              <span>
+                <i />
+                {network === "—" ? "Network ready" : `${network} online`}
+              </span>
+              <small>v1.0 UI</small>
+            </div>
+          </footer>
         </main>
       </div>
 
