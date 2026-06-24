@@ -1,59 +1,100 @@
 "use client";
 
-import { BrowserProvider } from "ethers";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+  createInitialProfile,
   pointsApi,
   type PointsProfile,
 } from "@/lib/mock-points-api";
-import {
-  shortenAddress,
-  waitForWalletProvider,
-} from "@/lib/wallet";
+import { shortenAddress, waitForWalletProvider } from "@/lib/wallet";
 import type { EthereumProvider, WalletKind } from "@/types/wallet";
+import { VerifyModal } from "./verify-modal";
 import { WalletModal } from "./wallet-modal";
 
-function Logo() {
+const navigation = [
+  { label: "Dashboard", href: "#dashboard", icon: "grid" },
+  { label: "Daily Tasks", href: "#daily-tasks", icon: "check" },
+  { label: "Bonus Tasks", href: "#bonus-tasks", icon: "spark" },
+  { label: "Leaderboard", href: "#leaderboard", icon: "rank" },
+  { label: "Invite Friends", href: "#invite-friends", icon: "invite" },
+  { label: "Profile", href: "#profile", icon: "user" },
+];
+
+const leaderboard = [
+  { name: "Alex Morgan", points: 12840, color: "#8b5cf6" },
+  { name: "Mia Chen", points: 11290, color: "#ec4899" },
+  { name: "Noah Williams", points: 9840, color: "#06b6d4" },
+  { name: "You", points: 1280, color: "#a78bfa", current: true },
+];
+
+function NavIcon({ name }: { name: string }) {
+  const paths: Record<string, React.ReactNode> = {
+    grid: (
+      <>
+        <rect x="3" y="3" width="7" height="7" rx="2" />
+        <rect x="14" y="3" width="7" height="7" rx="2" />
+        <rect x="3" y="14" width="7" height="7" rx="2" />
+        <rect x="14" y="14" width="7" height="7" rx="2" />
+      </>
+    ),
+    check: (
+      <>
+        <circle cx="12" cy="12" r="9" />
+        <path d="m8 12 2.5 2.5L16 9" />
+      </>
+    ),
+    spark: <path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z" />,
+    rank: (
+      <>
+        <path d="M7 20v-6h4v6M14 20V9h4v11M3 20v-3h4v3" />
+        <path d="M4 11 9 6l4 3 6-6" />
+      </>
+    ),
+    invite: (
+      <>
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M19 8v6M22 11h-6" />
+      </>
+    ),
+    user: (
+      <>
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 21a8 8 0 0 1 16 0" />
+      </>
+    ),
+  };
+
   return (
-    <a className="brand" href="#" aria-label="Nova Points 首页">
-      <span className="brand-mark">N</span>
-      <span>NOVA</span>
-    </a>
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      {paths[name]}
+    </svg>
   );
 }
+
+function checkAddressBalance() {}
 
 export function Dashboard() {
   const [address, setAddress] = useState("");
   const [profile, setProfile] = useState<PointsProfile | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState("Dashboard");
+  const [walletModalOpen, setWalletModalOpen] = useState(false);
+  const [verifyModalOpen, setVerifyModalOpen] = useState(false);
   const [walletBusy, setWalletBusy] = useState<WalletKind | null>(null);
   const [actionBusy, setActionBusy] = useState("");
   const [error, setError] = useState("");
-  const [sessionLoading, setSessionLoading] = useState(true);
   const walletProviders = useRef<
     Partial<Record<WalletKind, EthereumProvider>>
   >({});
 
-  const loadProfile = useCallback(async (walletAddress: string) => {
-    const data = await pointsApi.getProfile(walletAddress);
-    setProfile(data);
-  }, []);
-
-  useEffect(() => {
-    fetch("/api/auth/session")
-      .then(async (response) => {
-        if (!response.ok) return;
-        const data = (await response.json()) as { address: string };
-        setAddress(data.address);
-        await loadProfile(data.address);
-      })
-      .finally(() => setSessionLoading(false));
-  }, [loadProfile]);
+  function openVerifyModal() {
+    setVerifyModalOpen(true);
+  }
 
   useEffect(() => {
     let cancelled = false;
 
-    const initializeWalletProviders = async () => {
+    const initializeWallets = async () => {
       try {
         const [metamask, tokenpocket] = await Promise.all([
           waitForWalletProvider("metamask", 1000),
@@ -64,13 +105,13 @@ export function Dashboard() {
         if (metamask) walletProviders.current.metamask = metamask;
         if (tokenpocket) walletProviders.current.tokenpocket = tokenpocket;
       } catch {
-        // Wallet injection failures must never prevent the page from rendering.
+        // A wallet injection failure must not block the dashboard UI.
       }
     };
 
     const timer =
       typeof window !== "undefined"
-        ? window.setTimeout(initializeWalletProviders, 500)
+        ? window.setTimeout(initializeWallets, 600)
         : undefined;
 
     return () => {
@@ -81,385 +122,317 @@ export function Dashboard() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!address) return;
+
+    let active = true;
+    pointsApi
+      .getProfile(address)
+      .then((data) => {
+        if (active) setProfile(data);
+      })
+      .catch(() => {
+        if (active) setProfile(createInitialProfile());
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [address]);
+
   const connectWallet = async (kind: WalletKind) => {
     setError("");
     setWalletBusy(kind);
+
     try {
-      const injectedProvider =
+      const provider =
         walletProviders.current[kind] ??
         (await waitForWalletProvider(kind, 1000));
 
-      if (!injectedProvider) {
+      if (!provider) {
         setError(
-          `${kind === "metamask" ? "MetaMask" : "TokenPocket"} 未检测到，请确认钱包已安装并刷新页面。`,
+          `${kind === "metamask" ? "MetaMask" : "TokenPocket"} was not detected. Open this page inside the wallet browser and try again.`,
         );
         return;
       }
 
-      walletProviders.current[kind] = injectedProvider;
-      const accounts = (await injectedProvider.request({
+      walletProviders.current[kind] = provider;
+      const accounts = (await provider.request({
         method: "eth_requestAccounts",
       })) as string[];
-      const walletAddress = accounts[0];
-      if (!walletAddress) throw new Error("钱包中没有可用账户。");
+      const nextAddress = accounts?.[0];
 
-      const nonceResponse = await fetch("/api/auth/nonce", { method: "POST" });
-      if (!nonceResponse.ok) throw new Error("无法创建登录请求。");
-      const { nonce } = (await nonceResponse.json()) as { nonce: string };
-      const message = `登录 Nova Points\n\n钱包地址: ${walletAddress}\n一次性验证码: ${nonce}`;
-
-      const provider = new BrowserProvider(injectedProvider);
-      const signer = await provider.getSigner();
-      const signature = await signer.signMessage(message);
-      const verifyResponse = await fetch("/api/auth/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address: walletAddress, signature }),
-      });
-      const result = (await verifyResponse.json()) as {
-        address?: string;
-        error?: string;
-      };
-      if (!verifyResponse.ok || !result.address) {
-        throw new Error(result.error || "登录失败。");
+      if (!nextAddress) {
+        setError("No wallet account is available.");
+        return;
       }
 
-      setAddress(result.address);
-      await loadProfile(result.address);
-      setModalOpen(false);
+      setAddress(nextAddress);
+      setWalletModalOpen(false);
+      checkAddressBalance();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "钱包连接失败。");
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Wallet connection failed. Please try again.",
+      );
     } finally {
       setWalletBusy(null);
     }
   };
 
-  const disconnect = async () => {
-    await fetch("/api/auth/session", { method: "DELETE" });
+  const disconnect = () => {
     setAddress("");
     setProfile(null);
+    setError("");
   };
 
-  const checkIn = async () => {
-    if (!address || !profile || profile.checkedInToday) return;
-    setActionBusy("checkin");
-    setProfile(await pointsApi.checkIn(address));
-    setActionBusy("");
+  const runTask = async (taskId: string) => {
+    if (!address) {
+      setWalletModalOpen(true);
+      return;
+    }
+
+    setActionBusy(taskId);
+    try {
+      if (taskId === "daily-check-in") {
+        setProfile(await pointsApi.checkIn(address));
+      } else {
+        setProfile(await pointsApi.completeTask(address, taskId));
+      }
+    } catch {
+      setError("The task could not be updated. Please try again.");
+    } finally {
+      setActionBusy("");
+    }
   };
 
-  const claimQuest = async (questId: string) => {
-    if (!address) return;
-    setActionBusy(questId);
-    setProfile(await pointsApi.claimQuest(address, questId));
-    setActionBusy("");
-  };
-
-  const isLoggedIn = Boolean(address && profile);
+  const isConnected = Boolean(address);
+  const stats = [
+    {
+      label: "Total Points",
+      value: isConnected ? (profile?.balance ?? 0).toLocaleString() : "0",
+      detail: "Points",
+      icon: "✦",
+    },
+    {
+      label: "Tasks Completed",
+      value: isConnected
+        ? String(profile?.tasks.filter((task) => task.completed).length ?? 0)
+        : "0",
+      detail: "Tasks",
+      icon: "✓",
+    },
+    {
+      label: "Daily Streak",
+      value: isConnected ? String(profile?.streak ?? 0) : "0",
+      detail: "Daily Check-in",
+      icon: "◇",
+    },
+    {
+      label: "Rank",
+      value: isConnected ? `#${profile?.rank ?? 0}` : "0",
+      detail: "Rank",
+      icon: "↗",
+    },
+  ];
+  const tasks = profile?.tasks ?? createInitialProfile().tasks;
 
   return (
-    <main>
-      <header className="site-header">
-        <div className="shell header-inner">
-          <Logo />
-          <nav aria-label="主导航">
-            <a className="active" href="#home">
-              首页
+    <div className="orbit-app">
+      <aside className="sidebar">
+        <a className="sidebar-brand" href="#dashboard" aria-label="Orbit Points">
+          <span className="orbit-logo">
+            <span />
+          </span>
+          <span>
+            <strong>Orbit</strong>
+            <small>Points</small>
+          </span>
+        </a>
+
+        <nav className="sidebar-nav" aria-label="Orbit Points navigation">
+          {navigation.map((item) => (
+            <a
+              className={activeSection === item.label ? "active" : ""}
+              href={item.href}
+              key={item.label}
+              onClick={() => setActiveSection(item.label)}
+            >
+              <NavIcon name={item.icon} />
+              <span>{item.label}</span>
             </a>
-            <a href="#quests">任务</a>
-            <a href="#rewards">积分</a>
-          </nav>
-          {isLoggedIn ? (
-            <button className="address-button" onClick={disconnect}>
-              <span className="status-dot" />
+          ))}
+        </nav>
+
+        <div className="sidebar-card">
+          <span className="sidebar-card-icon">✦</span>
+          <strong>Orbit Points</strong>
+          <p>Complete Tasks and track your Rewards.</p>
+          <button onClick={openVerifyModal}>Profile</button>
+        </div>
+      </aside>
+
+      <div className="app-content">
+        <header className="top-header">
+          <div>
+            <span className="mobile-brand-mark">O</span>
+            <h1>Orbit Points</h1>
+          </div>
+          {isConnected ? (
+            <button className="wallet-button connected" onClick={disconnect}>
+              <span className="connection-dot" />
               {shortenAddress(address)}
-              <span className="logout-hint">退出</span>
             </button>
           ) : (
             <button
-              className="connect-button"
-              disabled={sessionLoading}
-              onClick={() => setModalOpen(true)}
+              className="wallet-button"
+              onClick={() => setWalletModalOpen(true)}
             >
-              {sessionLoading ? "加载中…" : "连接钱包"}
+              <span className="wallet-button-icon">◇</span>
+              Connect Wallet
             </button>
           )}
-        </div>
-      </header>
+        </header>
 
-      <section className="hero shell" id="home">
-        <div className="hero-glow hero-glow-one" />
-        <div className="hero-glow hero-glow-two" />
-        <div className="hero-copy">
-          <div className="eyebrow">
-            <span>✦</span> NOVA REWARDS PROTOCOL
-          </div>
-          <h1>
-            参与生态，
-            <br />
-            <em>让每一步都有价值。</em>
-          </h1>
-          <p>
-            连接钱包，完成任务并积累 Nova Points。
-            <br />
-            你的每一次参与，都在构建更开放的数字未来。
-          </p>
-          <div className="hero-actions">
-            <button
-              className="primary-cta"
-              onClick={() => {
-                if (!isLoggedIn) {
-                  setModalOpen(true);
-                  return;
-                }
-
-                if (typeof window !== "undefined") {
-                  window.document
-                    .querySelector("#quests")
-                    ?.scrollIntoView({ behavior: "smooth" });
-                }
-              }}
-            >
-              {isLoggedIn ? "查看我的任务" : "开始赚取积分"} <span>→</span>
-            </button>
-            <a className="text-link" href="#how">
-              了解运作方式 <span>↗</span>
-            </a>
-          </div>
-          <div className="trust-row">
-            <span>
-              <i>✓</i> 无需交易
-            </span>
-            <span>
-              <i>✓</i> 签名登录
-            </span>
-            <span>
-              <i>✓</i> 资产安全
-            </span>
-          </div>
-        </div>
-
-        <div className="orb-stage" aria-hidden="true">
-          <div className="orbit orbit-one">
-            <span />
-          </div>
-          <div className="orbit orbit-two">
-            <span />
-          </div>
-          <div className="nova-orb">
-            <div className="orb-shine" />
-            <strong>N</strong>
-          </div>
-          <div className="floating-chip chip-one">+100</div>
-          <div className="floating-chip chip-two">✦</div>
-          <div className="floating-chip chip-three">+60</div>
-        </div>
-      </section>
-
-      <section className="metrics-band">
-        <div className="shell metrics">
-          <div>
-            <strong>24.8K</strong>
-            <span>活跃参与者</span>
-          </div>
-          <div>
-            <strong>18.6M</strong>
-            <span>已发放积分</span>
-          </div>
-          <div>
-            <strong>42</strong>
-            <span>生态任务</span>
-          </div>
-          <div>
-            <strong>7 Days</strong>
-            <span>当前赛季剩余</span>
-          </div>
-        </div>
-      </section>
-
-      <section className="dashboard-section shell" id="rewards">
-        <div className="section-heading">
-          <div>
-            <span className="section-label">YOUR PROGRESS</span>
-            <h2>{isLoggedIn ? "我的积分中心" : "连接钱包，开启积分旅程"}</h2>
-          </div>
-          {!isLoggedIn && (
-            <button className="outline-button" onClick={() => setModalOpen(true)}>
-              连接钱包 →
-            </button>
-          )}
-        </div>
-
-        {address && profile ? (
-          <div className="dashboard-grid">
-            <article className="balance-card">
-              <div className="card-topline">
-                <span>可用积分</span>
-                <span className="season-pill">SEASON 01</span>
-              </div>
-              <strong className="balance">
-                {profile.balance.toLocaleString()}
-                <small>PTS</small>
-              </strong>
-              <div className="progress-track">
-                <span style={{ width: `${Math.min(profile.balance / 20, 100)}%` }} />
-              </div>
-              <div className="balance-meta">
-                <span>距离下一等级还需 {Math.max(2000 - profile.balance, 0)} PTS</span>
-                <b>LV. 4</b>
-              </div>
-            </article>
-
-            <article className="checkin-card">
-              <div className="checkin-icon">✦</div>
-              <div>
-                <span>连续签到</span>
-                <strong>{profile.streak} 天</strong>
-              </div>
-              <button
-                disabled={profile.checkedInToday || actionBusy === "checkin"}
-                onClick={checkIn}
-              >
-                {profile.checkedInToday
-                  ? "今日已签到"
-                  : actionBusy === "checkin"
-                    ? "处理中…"
-                    : "签到 +60"}
-              </button>
-            </article>
-
-            <article className="rank-card">
-              <span>社区排名</span>
-              <strong>#{profile.rank}</strong>
-              <small>领先 76% 的参与者</small>
-            </article>
-          </div>
-        ) : (
-          <div className="preview-panel">
-            <div className="preview-lock">N</div>
+        <main className="dashboard-main" id="dashboard">
+          <section className="welcome-row">
             <div>
-              <h3>你的积分面板已准备就绪</h3>
-              <p>登录后查看积分余额、连续签到、社区排名与任务进度。</p>
+              <span className="eyebrow">ORBIT POINTS DASHBOARD</span>
+              <h2>Welcome to your Orbit</h2>
+              <p>Track Points, complete Tasks, and view your Rank.</p>
             </div>
-          </div>
-        )}
-      </section>
+            <div className="season-chip">
+              <span />
+              Rewards active
+            </div>
+          </section>
 
-      <section className="quests-section shell" id="quests">
-        <div className="section-heading">
-          <div>
-            <span className="section-label">FEATURED QUESTS</span>
-            <h2>本周精选任务</h2>
-          </div>
-          <span className="refresh-note">每周一 00:00 更新</span>
-        </div>
-
-        <div className="quest-grid">
-          {(profile?.quests ?? [
-            {
-              id: "connect",
-              title: "完成钱包登录",
-              description: "使用支持的钱包完成一次签名登录",
-              reward: 100,
-              icon: "⌁",
-              claimed: false,
-            },
-            {
-              id: "explore",
-              title: "探索 Nova 生态",
-              description: "浏览项目功能，解锁新手探索奖励",
-              reward: 180,
-              icon: "✦",
-              claimed: false,
-            },
-            {
-              id: "community",
-              title: "加入社区",
-              description: "完成社区身份验证并领取贡献积分",
-              reward: 250,
-              icon: "◎",
-              claimed: false,
-            },
-          ]).map((quest, index) => (
-            <article className="quest-card" key={quest.id}>
-              <div className={`quest-icon icon-${index + 1}`}>{quest.icon}</div>
-              <div className="quest-content">
-                <span>0{index + 1} / QUEST</span>
-                <h3>{quest.title}</h3>
-                <p>{quest.description}</p>
-                <div className="quest-footer">
-                  <strong>+{quest.reward} PTS</strong>
-                  <button
-                    disabled={quest.claimed || actionBusy === quest.id}
-                    onClick={() =>
-                      isLoggedIn
-                        ? claimQuest(quest.id)
-                        : setModalOpen(true)
-                    }
-                  >
-                    {quest.claimed
-                      ? "已领取 ✓"
-                      : actionBusy === quest.id
-                        ? "处理中…"
-                        : isLoggedIn
-                          ? "领取奖励"
-                          : "连接后参与"}
-                  </button>
+          <section className="stats-grid" aria-label="Points overview">
+            {stats.map((stat) => (
+              <article className="glass-card stat-card" key={stat.label}>
+                <div className="stat-icon">{stat.icon}</div>
+                <div>
+                  <span>{stat.label}</span>
+                  <strong>{stat.value}</strong>
+                  <small>{stat.detail}</small>
                 </div>
+              </article>
+            ))}
+          </section>
+
+          <section className="content-grid">
+            <div className="tasks-panel" id="daily-tasks">
+              <div className="section-title">
+                <div>
+                  <span>DAILY TASKS</span>
+                  <h3>Daily Tasks</h3>
+                </div>
+                <small>{isConnected ? "Connected" : "Connect Wallet"}</small>
               </div>
-            </article>
-          ))}
-        </div>
-      </section>
 
-      <section className="how-section" id="how">
-        <div className="shell">
-          <div className="section-heading light-heading">
-            <div>
-              <span className="section-label">HOW IT WORKS</span>
-              <h2>三步开始你的积分旅程</h2>
+              <div className="task-list">
+                {tasks.map((task, index) => (
+                  <article
+                    className={`glass-card task-card ${
+                      task.completed ? "completed" : ""
+                    }`}
+                    id={index === 2 ? "bonus-tasks" : undefined}
+                    key={task.id}
+                  >
+                    <div className="task-symbol">{task.icon}</div>
+                    <div className="task-copy">
+                      <span>{task.category}</span>
+                      <h4>{task.title}</h4>
+                      <p>{task.description}</p>
+                    </div>
+                    <div className="task-action">
+                      <strong>+{task.reward} Points</strong>
+                      <button
+                        disabled={task.completed || actionBusy === task.id}
+                        onClick={() => runTask(task.id)}
+                      >
+                        {task.completed
+                          ? "Completed"
+                          : actionBusy === task.id
+                            ? "Starting..."
+                            : "Start"}
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
             </div>
-          </div>
-          <div className="steps">
-            <div>
-              <span>01</span>
-              <h3>连接钱包</h3>
-              <p>使用 MetaMask 或 TokenPocket 完成安全签名登录。</p>
-            </div>
-            <div>
-              <span>02</span>
-              <h3>完成任务</h3>
-              <p>探索生态、每日签到，参与不同类型的社区活动。</p>
-            </div>
-            <div>
-              <span>03</span>
-              <h3>累积积分</h3>
-              <p>提升等级与排名，为后续生态权益做好准备。</p>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      <footer>
-        <div className="shell footer-inner">
-          <Logo />
-          <p>© 2026 Nova Protocol. Built for the open web.</p>
-          <div>
-            <a href="#">X</a>
-            <a href="#">Discord</a>
-            <a href="#">Docs</a>
-          </div>
-        </div>
-      </footer>
+            <aside className="leaderboard-panel glass-card" id="leaderboard">
+              <div className="section-title">
+                <div>
+                  <span>RANK</span>
+                  <h3>Leaderboard</h3>
+                </div>
+                <small>Points</small>
+              </div>
+
+              <div className="leaderboard-list">
+                {leaderboard.map((member, index) => (
+                  <div
+                    className={member.current ? "current-user" : ""}
+                    key={member.name}
+                  >
+                    <span className="position">{index + 1}</span>
+                    <span
+                      className="avatar"
+                      style={{ "--avatar": member.color } as React.CSSProperties}
+                    >
+                      {member.name.charAt(0)}
+                    </span>
+                    <span className="member-name">
+                      <strong>{member.name}</strong>
+                      <small>{member.current ? "Current Rank" : "Rank"}</small>
+                    </span>
+                    <strong className="member-points">
+                      {member.points.toLocaleString()}
+                    </strong>
+                  </div>
+                ))}
+              </div>
+
+              <button className="leaderboard-button">View Rank</button>
+            </aside>
+          </section>
+
+          <section className="invite-banner" id="invite-friends">
+            <div className="invite-orbit" aria-hidden="true">
+              <span />
+            </div>
+            <div>
+              <span className="eyebrow">INVITE FRIENDS</span>
+              <h3>Grow your Orbit together</h3>
+              <p>Invite Friends and explore more Tasks and Rewards.</p>
+            </div>
+            <button onClick={openVerifyModal}>Invite Now</button>
+          </section>
+
+          <section className="profile-anchor" id="profile">
+            <span>Orbit Points</span>
+            <span>Points · Tasks · Rewards · Rank</span>
+          </section>
+        </main>
+      </div>
 
       <WalletModal
         busy={walletBusy}
         error={error}
         onClose={() => {
-          if (!walletBusy) setModalOpen(false);
+          if (!walletBusy) setWalletModalOpen(false);
         }}
         onConnect={connectWallet}
-        open={modalOpen}
+        open={walletModalOpen}
       />
-    </main>
+      <VerifyModal
+        open={verifyModalOpen}
+        onClose={() => setVerifyModalOpen(false)}
+      />
+    </div>
   );
 }

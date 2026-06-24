@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export async function POST() {
   const nonce = randomBytes(16).toString("hex");
   const response = NextResponse.json({ nonce });
-  response.cookies.set("nova_nonce", nonce, {
+  response.cookies.set("orbit_nonce", nonce, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Nova Points — Web3 Rewards",
-  description: "Connect your wallet, complete quests and earn onchain-ready points.",
+  title: "Orbit Points — Web3 Dashboard",
+  description: "Connect your wallet, complete Tasks, and track Orbit Points.",
 };
 
 export default function RootLayout({
@@ -12,7 +12,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN">
+    <html lang="en">
       <body>{children}</body>
     </html>
   );

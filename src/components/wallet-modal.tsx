@@ -24,17 +24,18 @@ export function WalletModal({
       <section
         aria-labelledby="wallet-title"
         aria-modal="true"
-        className="wallet-modal"
+        className="wallet-modal glass-card"
         onMouseDown={(event) => event.stopPropagation()}
         role="dialog"
       >
-        <button className="modal-close" onClick={onClose} aria-label="关闭">
+        <button className="modal-close" onClick={onClose} aria-label="Close">
           ×
         </button>
-        <div className="modal-kicker">安全连接</div>
-        <h2 id="wallet-title">选择你的钱包</h2>
+        <span className="modal-kicker">ORBIT POINTS</span>
+        <h2 id="wallet-title">Connect Wallet</h2>
         <p className="modal-copy">
-          我们只会请求连接与签名，不会发起交易或访问你的资产。
+          Choose MetaMask or TokenPocket. Connecting only requests your wallet
+          account.
         </p>
 
         <div className="wallet-list">
@@ -46,11 +47,9 @@ export function WalletModal({
             <span className="wallet-logo metamask-logo">M</span>
             <span>
               <strong>MetaMask</strong>
-              <small>浏览器扩展钱包</small>
+              <small>Browser and mobile wallet</small>
             </span>
-            <span className="option-arrow">
-              {busy === "metamask" ? "···" : "→"}
-            </span>
+            <span>{busy === "metamask" ? "..." : "→"}</span>
           </button>
           <button
             className="wallet-option"
@@ -60,18 +59,14 @@ export function WalletModal({
             <span className="wallet-logo tp-logo">TP</span>
             <span>
               <strong>TokenPocket</strong>
-              <small>移动端与浏览器钱包</small>
+              <small>Mobile DApp browser</small>
             </span>
-            <span className="option-arrow">
-              {busy === "tokenpocket" ? "···" : "→"}
-            </span>
+            <span>{busy === "tokenpocket" ? "..." : "→"}</span>
           </button>
         </div>
 
         {error && <p className="modal-error">{error}</p>}
-        <p className="modal-footnote">
-          连接即表示你同意 Nova Points 的使用条款。
-        </p>
+        <p className="modal-footnote">Orbit Points does not request a signature.</p>
       </section>
     </div>
   );

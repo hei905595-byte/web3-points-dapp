@@ -15,10 +15,10 @@ export interface EthereumProvider {
 declare global {
   interface Window {
     ethereum?: EthereumProvider;
-    tp?: {
+    tp?: EthereumProvider & {
       ethereum?: EthereumProvider;
     };
-    tokenpocket?: {
+    tokenpocket?: EthereumProvider & {
       ethereum?: EthereumProvider;
     };
   }

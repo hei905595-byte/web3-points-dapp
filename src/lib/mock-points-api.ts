@@ -1,105 +1,89 @@
-export interface PointActivity {
-  id: string;
-  title: string;
-  points: number;
-  timestamp: string;
-}
-
-export interface Quest {
+export interface PointTask {
   id: string;
   title: string;
   description: string;
+  category: "Daily Check-in" | "Daily Tasks" | "Bonus Tasks";
   reward: number;
   icon: string;
-  claimed: boolean;
+  completed: boolean;
 }
 
 export interface PointsProfile {
   balance: number;
   streak: number;
   rank: number;
-  checkedInToday: boolean;
-  quests: Quest[];
-  activity: PointActivity[];
+  tasks: PointTask[];
 }
 
-const wait = (duration = 320) =>
+const wait = (duration = 280) =>
   new Promise((resolve) => setTimeout(resolve, duration));
 
-const today = () => new Date().toISOString().slice(0, 10);
-
-function key(address: string) {
-  return `nova-points:${address.toLowerCase()}`;
+function storageKey(address: string) {
+  return `orbit-points:${address.toLowerCase()}`;
 }
 
-function initialProfile(): PointsProfile {
+export function createInitialProfile(): PointsProfile {
   return {
     balance: 1280,
     streak: 3,
     rank: 842,
-    checkedInToday: false,
-    quests: [
+    tasks: [
       {
-        id: "connect",
-        title: "完成钱包登录",
-        description: "使用支持的钱包完成一次签名登录",
-        reward: 100,
-        icon: "⌁",
-        claimed: true,
+        id: "daily-check-in",
+        title: "Daily Check-in",
+        description: "Return each day and keep your Daily Streak active.",
+        category: "Daily Check-in",
+        reward: 60,
+        icon: "✓",
+        completed: false,
       },
       {
-        id: "explore",
-        title: "探索 Nova 生态",
-        description: "浏览项目功能，解锁新手探索奖励",
+        id: "daily-tasks",
+        title: "Complete Daily Tasks",
+        description: "Review today’s Tasks and update your Points progress.",
+        category: "Daily Tasks",
+        reward: 120,
+        icon: "◇",
+        completed: false,
+      },
+      {
+        id: "bonus-tasks",
+        title: "Explore Bonus Tasks",
+        description: "Open the Bonus Tasks section and review available Rewards.",
+        category: "Bonus Tasks",
         reward: 180,
         icon: "✦",
-        claimed: false,
-      },
-      {
-        id: "community",
-        title: "加入社区",
-        description: "完成社区身份验证并领取贡献积分",
-        reward: 250,
-        icon: "◎",
-        claimed: false,
-      },
-    ],
-    activity: [
-      {
-        id: "welcome",
-        title: "新用户欢迎奖励",
-        points: 1000,
-        timestamp: new Date(Date.now() - 86400000 * 2).toISOString(),
-      },
-      {
-        id: "wallet",
-        title: "钱包登录任务",
-        points: 100,
-        timestamp: new Date(Date.now() - 86400000).toISOString(),
-      },
-      {
-        id: "bonus",
-        title: "早期体验加成",
-        points: 180,
-        timestamp: new Date(Date.now() - 3600000 * 5).toISOString(),
+        completed: false,
       },
     ],
   };
 }
 
 function read(address: string): PointsProfile {
-  const raw = localStorage.getItem(key(address));
-  if (!raw) {
-    const profile = initialProfile();
-    localStorage.setItem(key(address), JSON.stringify(profile));
-    return profile;
-  }
+  if (typeof window === "undefined") return createInitialProfile();
 
-  return JSON.parse(raw) as PointsProfile;
+  try {
+    const raw = window.localStorage.getItem(storageKey(address));
+    if (!raw) {
+      const profile = createInitialProfile();
+      window.localStorage.setItem(storageKey(address), JSON.stringify(profile));
+      return profile;
+    }
+
+    return JSON.parse(raw) as PointsProfile;
+  } catch {
+    return createInitialProfile();
+  }
 }
 
 function write(address: string, profile: PointsProfile) {
-  localStorage.setItem(key(address), JSON.stringify(profile));
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(storageKey(address), JSON.stringify(profile));
+  } catch {
+    // Local mock persistence is optional and must not interrupt the UI.
+  }
 }
 
 export const pointsApi = {
@@ -109,55 +93,35 @@ export const pointsApi = {
   },
 
   async checkIn(address: string) {
-    await wait(520);
+    await wait();
     const profile = read(address);
-    const checkInKey = `${key(address)}:checkin`;
-    if (localStorage.getItem(checkInKey) === today()) {
-      return profile;
-    }
+    const task = profile.tasks.find((item) => item.id === "daily-check-in");
+    if (!task || task.completed) return profile;
 
-    const reward = 60;
     const next = {
       ...profile,
-      balance: profile.balance + reward,
+      balance: profile.balance + task.reward,
       streak: profile.streak + 1,
-      checkedInToday: true,
-      activity: [
-        {
-          id: crypto.randomUUID(),
-          title: "每日签到",
-          points: reward,
-          timestamp: new Date().toISOString(),
-        },
-        ...profile.activity,
-      ],
+      tasks: profile.tasks.map((item) =>
+        item.id === task.id ? { ...item, completed: true } : item,
+      ),
     };
     write(address, next);
-    localStorage.setItem(checkInKey, today());
     return next;
   },
 
-  async claimQuest(address: string, questId: string) {
-    await wait(520);
+  async completeTask(address: string, taskId: string) {
+    await wait();
     const profile = read(address);
-    const quest = profile.quests.find((item) => item.id === questId);
-    if (!quest || quest.claimed) return profile;
+    const task = profile.tasks.find((item) => item.id === taskId);
+    if (!task || task.completed) return profile;
 
     const next = {
       ...profile,
-      balance: profile.balance + quest.reward,
-      quests: profile.quests.map((item) =>
-        item.id === questId ? { ...item, claimed: true } : item,
+      balance: profile.balance + task.reward,
+      tasks: profile.tasks.map((item) =>
+        item.id === taskId ? { ...item, completed: true } : item,
       ),
-      activity: [
-        {
-          id: crypto.randomUUID(),
-          title: quest.title,
-          points: quest.reward,
-          timestamp: new Date().toISOString(),
-        },
-        ...profile.activity,
-      ],
     };
     write(address, next);
     return next;

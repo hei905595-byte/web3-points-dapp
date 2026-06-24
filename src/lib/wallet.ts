@@ -1,27 +1,50 @@
 import type { EthereumProvider, WalletKind } from "@/types/wallet";
 
+function isProvider(value: unknown): value is EthereumProvider {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      "request" in value &&
+      typeof (value as EthereumProvider).request === "function",
+  );
+}
+
 export function getWalletProvider(kind: WalletKind): EthereumProvider | null {
   if (typeof window === "undefined") return null;
 
-  if (kind === "tokenpocket") {
-    const tokenPocketProvider =
-      window.tp?.ethereum ?? window.tokenpocket?.ethereum;
-    if (tokenPocketProvider) return tokenPocketProvider;
+  try {
+    const ethereum = window.ethereum;
+    const providers = ethereum?.providers ?? (ethereum ? [ethereum] : []);
+
+    if (kind === "tokenpocket") {
+      const candidates = [
+        window.tp?.ethereum,
+        window.tp,
+        window.tokenpocket?.ethereum,
+        window.tokenpocket,
+        providers.find((provider) => provider.isTokenPocket),
+        ethereum?.isTokenPocket ? ethereum : undefined,
+      ];
+      const directProvider = candidates.find(isProvider);
+      if (directProvider) return directProvider;
+
+      const userAgent =
+        typeof window.navigator !== "undefined"
+          ? window.navigator.userAgent.toLowerCase()
+          : "";
+      return isProvider(ethereum) && userAgent.includes("tokenpocket")
+        ? ethereum
+        : null;
+    }
+
+    return (
+      providers.find(
+        (provider) => provider.isMetaMask && !provider.isTokenPocket,
+      ) ?? (isProvider(ethereum) && !ethereum.isTokenPocket ? ethereum : null)
+    );
+  } catch {
+    return null;
   }
-
-  const ethereum = window.ethereum;
-  if (!ethereum) return null;
-
-  const providers = ethereum.providers ?? [ethereum];
-  if (kind === "tokenpocket") {
-    return providers.find((provider) => provider.isTokenPocket) ?? null;
-  }
-
-  return (
-    providers.find(
-      (provider) => provider.isMetaMask && !provider.isTokenPocket,
-    ) ?? (ethereum.isMetaMask ? ethereum : null)
-  );
 }
 
 export async function waitForWalletProvider(
@@ -30,34 +53,30 @@ export async function waitForWalletProvider(
 ): Promise<EthereumProvider | null> {
   if (typeof window === "undefined") return null;
 
-  const existingProvider = getWalletProvider(kind);
-  if (existingProvider) return existingProvider;
+  try {
+    const existingProvider = getWalletProvider(kind);
+    if (existingProvider) return existingProvider;
 
-  const startedAt = Date.now();
-  return new Promise((resolve) => {
-    const checkProvider = () => {
-      try {
-        const provider = getWalletProvider(kind);
-        if (provider || Date.now() - startedAt >= timeoutMs) {
-          resolve(provider);
-          return;
+    const startedAt = Date.now();
+    return await new Promise((resolve) => {
+      const checkProvider = () => {
+        try {
+          const provider = getWalletProvider(kind);
+          if (provider || Date.now() - startedAt >= timeoutMs) {
+            resolve(provider);
+            return;
+          }
+          window.setTimeout(checkProvider, 100);
+        } catch {
+          resolve(null);
         }
-      } catch {
-        resolve(null);
-        return;
-      }
+      };
 
       window.setTimeout(checkProvider, 100);
-    };
-
-    window.setTimeout(checkProvider, 100);
-  });
-}
-
-export function walletInstallUrl(kind: WalletKind) {
-  return kind === "metamask"
-    ? "https://metamask.io/download/"
-    : "https://www.tokenpocket.pro/en/download/app";
+    });
+  } catch {
+    return null;
+  }
 }
 
 export function shortenAddress(address: string) {

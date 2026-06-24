@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
       address?: string;
       signature?: string;
     };
-    const nonce = request.cookies.get("nova_nonce")?.value;
+    const nonce = request.cookies.get("orbit_nonce")?.value;
 
     if (!address || !signature || !nonce) {
       return NextResponse.json(
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const message = `登录 Nova Points\n\n钱包地址: ${address}\n一次性验证码: ${nonce}`;
+    const message = `Orbit Points\n\nWallet: ${address}\nNonce: ${nonce}`;
     const recoveredAddress = verifyMessage(message, signature);
     if (recoveredAddress.toLowerCase() !== address.toLowerCase()) {
       return NextResponse.json(
@@ -35,14 +35,14 @@ export async function POST(request: NextRequest) {
       expiresAt: now + 7 * 24 * 60 * 60 * 1000,
     });
     const response = NextResponse.json({ address: recoveredAddress });
-    response.cookies.set("nova_session", token, {
+    response.cookies.set("orbit_session", token, {
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
       maxAge: 7 * 24 * 60 * 60,
       path: "/",
     });
-    response.cookies.delete("nova_nonce");
+    response.cookies.delete("orbit_nonce");
     return response;
   } catch {
     return NextResponse.json(

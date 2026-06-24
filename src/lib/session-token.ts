@@ -6,7 +6,7 @@ export interface SessionPayload {
   expiresAt: number;
 }
 
-const DEV_SECRET = "nova-points-local-development-secret-change-me";
+const DEV_SECRET = "orbit-points-local-development-secret-change-me";
 
 function secret() {
   return process.env.SESSION_SECRET || DEV_SECRET;

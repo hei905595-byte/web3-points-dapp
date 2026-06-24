@@ -4,7 +4,7 @@ import { verifySessionToken } from "@/lib/session-token";
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
-  const token = request.cookies.get("nova_session")?.value;
+  const token = request.cookies.get("orbit_session")?.value;
   const session = verifySessionToken(token);
   if (!session) {
     return NextResponse.json({ authenticated: false }, { status: 401 });
@@ -19,6 +19,6 @@ export async function GET(request: NextRequest) {
 
 export async function DELETE() {
   const response = NextResponse.json({ authenticated: false });
-  response.cookies.delete("nova_session");
+  response.cookies.delete("orbit_session");
   return response;
 }

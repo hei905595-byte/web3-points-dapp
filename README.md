@@ -1,38 +1,25 @@
-# Nova Points DApp
+# Orbit Points
 
-一个可直接运行和部署到 Vercel 的 Next.js DApp 示例。
+Orbit Points is a responsive Next.js Web3 dashboard designed for direct Vercel deployment.
 
-## 功能
+## Features
 
-- MetaMask / TokenPocket 注入式钱包连接
-- 钱包签名登录、一次性 nonce、HttpOnly Cookie session
-- 前端 mock 积分 API（localStorage 持久化）
-- 每日签到、任务领取、积分动态
-- 响应式首页 UI
+- Dark glassmorphism dashboard with responsive desktop and mobile navigation
+- MetaMask and TokenPocket injected wallet support
+- SSR-safe wallet detection with delayed TokenPocket provider polling
+- Frontend-only mock Points and Tasks stored in localStorage
+- No frontend API requests, signature requests, database, or chain interaction
+- Reserved `checkAddressBalance()` and `VerifyModal` interfaces
 
-## 本地运行
-
-```bash
-cp .env.example .env.local
-npm install
-npm run dev
-```
-
-Windows PowerShell 可使用：
+## Local development
 
 ```powershell
-Copy-Item .env.example .env.local
 npm.cmd install
 npm.cmd run dev
 ```
 
-打开 <http://localhost:3000>。
+Open <http://localhost:3000>.
 
-## Vercel 部署
+## Vercel
 
-1. 将项目推送到 GitHub / GitLab / Bitbucket。
-2. 在 Vercel 导入仓库。
-3. 添加环境变量 `SESSION_SECRET`，值使用至少 32 字符的随机字符串。
-4. 使用默认 Next.js 构建配置部署。
-
-积分数据是浏览器本地模拟数据，不跨设备同步。生产项目应替换为数据库 API。
+Import the repository into Vercel and deploy with the default Next.js settings.
