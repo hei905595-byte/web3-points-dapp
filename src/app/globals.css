@@ -1991,3 +1991,205 @@ a:focus-visible {
     transform: none;
   }
 }
+
+.action-guide {
+  min-height: 64px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 16px;
+  background:
+    linear-gradient(90deg, rgba(139, 92, 246, 0.1), transparent 55%),
+    rgba(18, 14, 38, 0.68);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.08);
+}
+
+.action-guide-icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: #f0abfc;
+  background: linear-gradient(145deg, rgba(139, 92, 246, 0.28), rgba(217, 70, 239, 0.14));
+}
+
+.action-guide-icon svg {
+  width: 19px;
+  height: 19px;
+}
+
+.action-guide strong,
+.action-guide small {
+  display: block;
+}
+
+.action-guide strong {
+  font-size: 0.85rem;
+}
+
+.action-guide small {
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+}
+
+.action-guide button,
+.hero-primary-action,
+.hero-secondary-action,
+.section-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition:
+    transform 0.25s ease-out,
+    box-shadow 0.25s ease-out,
+    border-color 0.25s ease-out;
+}
+
+.action-guide button,
+.hero-primary-action {
+  border: 1px solid rgba(196, 181, 253, 0.34);
+  color: white;
+  background: linear-gradient(110deg, #7c3aed, #a855f7);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.24);
+}
+
+.action-guide button:hover,
+.hero-primary-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(168, 85, 247, 0.36);
+}
+
+.action-guide button svg,
+.hero-actions button svg,
+.section-link svg {
+  width: 15px;
+  height: 15px;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.hero-secondary-action {
+  border: 1px solid rgba(196, 181, 253, 0.25);
+  color: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.hero-secondary-action:hover {
+  transform: translateY(-2px);
+  border-color: rgba(196, 181, 253, 0.45);
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.stat-card {
+  --stat-accent: #8b5cf6;
+  --stat-accent-soft: rgba(139, 92, 246, 0.2);
+}
+
+.stat-card.accent-blue {
+  --stat-accent: #38bdf8;
+  --stat-accent-soft: rgba(56, 189, 248, 0.18);
+}
+
+.stat-card.accent-green {
+  --stat-accent: #4ade80;
+  --stat-accent-soft: rgba(74, 222, 128, 0.18);
+}
+
+.stat-card.accent-orange {
+  --stat-accent: #fb923c;
+  --stat-accent-soft: rgba(251, 146, 60, 0.18);
+}
+
+.stat-card .stat-icon {
+  color: var(--stat-accent);
+  border-color: color-mix(in srgb, var(--stat-accent) 38%, transparent);
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.16), transparent 42%),
+    var(--stat-accent-soft);
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.1),
+    0 0 24px var(--stat-accent-soft);
+}
+
+.stat-card:hover {
+  border-color: color-mix(in srgb, var(--stat-accent) 38%, transparent);
+  box-shadow:
+    0 18px 45px rgba(4, 2, 18, 0.36),
+    0 0 26px var(--stat-accent-soft);
+}
+
+.section-link {
+  border: 0;
+  color: var(--purple-light);
+  background: transparent;
+}
+
+.section-link:hover {
+  color: white;
+  transform: translateX(2px);
+}
+
+.section-metric {
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.task-card.locked .task-action button:not(:disabled) {
+  color: white;
+  background: linear-gradient(110deg, #7c3aed, #8b5cf6);
+  box-shadow: 0 8px 22px rgba(139, 92, 246, 0.22);
+}
+
+.leaderboard-button {
+  color: var(--purple-light);
+  transition:
+    transform 0.25s ease-out,
+    border-color 0.25s ease-out,
+    background 0.25s ease-out;
+}
+
+.leaderboard-button:hover {
+  transform: translateY(-2px);
+  border-color: rgba(168, 85, 247, 0.42);
+  background: rgba(139, 92, 246, 0.1);
+}
+
+@media (max-width: 760px) {
+  .action-guide {
+    grid-template-columns: auto 1fr;
+  }
+
+  .action-guide button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .hero-actions {
+    align-items: stretch;
+    flex-direction: column;
+    max-width: 220px;
+  }
+
+  .section-link {
+    padding-right: 0;
+  }
+}

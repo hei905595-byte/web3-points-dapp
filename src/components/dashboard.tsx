@@ -7,6 +7,7 @@ import {
   BarChart3,
   Check,
   CheckCircle2,
+  ChevronRight,
   CircleUserRound,
   Flame,
   Gift,
@@ -14,6 +15,7 @@ import {
   LockKeyhole,
   Medal,
   Orbit,
+  PartyPopper,
   Rocket,
   Sparkles,
   Trophy,
@@ -86,12 +88,22 @@ export function Dashboard() {
   const [error, setError] = useState("");
   const [uiReady, setUiReady] = useState(false);
   const [network, setNetwork] = useState<"ETH" | "TRON" | "—">("—");
+  const [showAllTasks, setShowAllTasks] = useState(false);
+  const [showFullLeaderboard, setShowFullLeaderboard] = useState(false);
   const walletProviders = useRef<
     Partial<Record<WalletKind, WalletProvider>>
   >({});
 
   function openVerifyModal() {
     setVerifyModalOpen(true);
+  }
+
+  function scrollToSection(sectionId: string) {
+    if (typeof window === "undefined") return;
+    document.getElementById(sectionId)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   }
 
   useEffect(() => {
@@ -252,6 +264,7 @@ export function Dashboard() {
     hint: string;
     trend: string;
     icon: LucideIcon;
+    accent: "purple" | "blue" | "green" | "orange";
   }> = [
     {
       label: "Total Points",
@@ -260,6 +273,7 @@ export function Dashboard() {
       hint: isConnected ? "Across all completed tasks" : "Connect to sync activity",
       trend: isConnected ? "↑ 8.4%" : "—",
       icon: Sparkles,
+      accent: "purple",
     },
     {
       label: "Tasks Completed",
@@ -270,6 +284,7 @@ export function Dashboard() {
       hint: isConnected ? "Keep your momentum going" : "No activity recorded yet",
       trend: isConnected ? "↑ 2" : "—",
       icon: CheckCircle2,
+      accent: "blue",
     },
     {
       label: "Daily Streak",
@@ -278,6 +293,7 @@ export function Dashboard() {
       hint: isConnected ? "Check in again tomorrow" : "Start your first streak",
       trend: isConnected ? "↑ 1 day" : "—",
       icon: Flame,
+      accent: "green",
     },
     {
       label: "Rank",
@@ -286,9 +302,11 @@ export function Dashboard() {
       hint: isConnected ? "Based on total points" : "Ranking unavailable",
       trend: isConnected ? "↑ 14" : "—",
       icon: Medal,
+      accent: "orange",
     },
   ];
   const tasks = profile?.tasks ?? createInitialProfile().tasks;
+  const visibleTasks = showAllTasks ? tasks : tasks.slice(0, 3);
   const isLoading = !uiReady || Boolean(walletBusy) || (isConnected && !profile);
   const leaderboardMembers: LeaderboardMember[] = [
     ...leaderboard,
@@ -299,6 +317,12 @@ export function Dashboard() {
       current: true,
     },
   ];
+  const visibleLeaderboardMembers = showFullLeaderboard
+    ? leaderboardMembers
+    : [
+        ...leaderboardMembers.slice(0, 3),
+        leaderboardMembers[leaderboardMembers.length - 1],
+      ];
 
   return (
     <div className="orbit-app">
@@ -372,6 +396,34 @@ export function Dashboard() {
         </header>
 
         <main className="dashboard-main" id="dashboard">
+          <section className="action-guide" aria-label="Getting started">
+            <span className="action-guide-icon">
+              <PartyPopper aria-hidden="true" />
+            </span>
+            <div>
+              <strong>
+                {isConnected
+                  ? "Your Orbit is active"
+                  : "Connect, complete tasks, and grow your rank"}
+              </strong>
+              <small>
+                {isConnected
+                  ? "Choose an available task below to earn your next points."
+                  : "Start by connecting a wallet. No transaction is required."}
+              </small>
+            </div>
+            <button
+              onClick={() =>
+                isConnected
+                  ? scrollToSection("daily-tasks")
+                  : setWalletModalOpen(true)
+              }
+            >
+              {isConnected ? "View Tasks" : "Get Started"}
+              <ChevronRight aria-hidden="true" />
+            </button>
+          </section>
+
           <section
             className={`hero-card glass-card ${isLoading ? "is-loading" : ""}`}
           >
@@ -379,6 +431,25 @@ export function Dashboard() {
               <span className="eyebrow">ORBIT POINTS DASHBOARD</span>
               <h2>Welcome to your Orbit</h2>
               <p>Track Points, complete Tasks, and view your Rank.</p>
+              <div className="hero-actions">
+                <button
+                  className="hero-primary-action"
+                  onClick={() =>
+                    isConnected
+                      ? scrollToSection("daily-tasks")
+                      : setWalletModalOpen(true)
+                  }
+                >
+                  {isConnected ? "Start a Task" : "Connect to Start"}
+                  <ArrowUpRight aria-hidden="true" />
+                </button>
+                <button
+                  className="hero-secondary-action"
+                  onClick={() => scrollToSection("leaderboard")}
+                >
+                  Explore Rankings
+                </button>
+              </div>
               <div className="hero-tags">
                 <span className={`identity-tag ${isConnected ? "online" : ""}`}>
                   <CircleUserRound aria-hidden="true" />
@@ -420,7 +491,7 @@ export function Dashboard() {
           <section className="stats-grid" aria-label="Points overview">
             {stats.map((stat) => (
               <article
-                className={`glass-card stat-card ${
+                className={`glass-card stat-card accent-${stat.accent} ${
                   isLoading ? "is-loading" : ""
                 }`}
                 key={stat.label}
@@ -455,11 +526,17 @@ export function Dashboard() {
                   <h3>Daily Tasks</h3>
                   <p>Complete available activities to grow your points balance.</p>
                 </div>
-                <small>{isConnected ? "Connected" : "Connect Wallet"}</small>
+                <button
+                  className="section-link"
+                  onClick={() => setShowAllTasks((current) => !current)}
+                >
+                  {showAllTasks ? "Show Less" : "View All"}
+                  <ChevronRight aria-hidden="true" />
+                </button>
               </div>
 
               <div className="task-list">
-                {tasks.map((task) => {
+                {visibleTasks.map((task) => {
                   const status = task.completed
                     ? "completed"
                     : isConnected
@@ -503,9 +580,7 @@ export function Dashboard() {
                         </strong>
                         <button
                           disabled={
-                            task.completed ||
-                            actionBusy === task.id ||
-                            !isConnected
+                            task.completed || actionBusy === task.id
                           }
                           onClick={() => runTask(task.id)}
                         >
@@ -514,7 +589,7 @@ export function Dashboard() {
                             : actionBusy === task.id
                               ? "Starting..."
                               : status === "locked"
-                                ? "Locked"
+                                ? "Connect"
                                 : "Start"}
                         </button>
                       </div>
@@ -536,19 +611,27 @@ export function Dashboard() {
                   <h3>Leaderboard</h3>
                   <p>Top community contributors this season.</p>
                 </div>
-                <small>Points</small>
+                <span className="section-metric">Points</span>
               </div>
 
               <div className="leaderboard-list">
-                {leaderboardMembers.map((member, index) => (
+                {visibleLeaderboardMembers.map((member, index) => {
+                  const sourceIndex = leaderboardMembers.findIndex(
+                    (entry) => entry.name === member.name,
+                  );
+                  return (
                   <div
                     className={`${member.current ? "current-user" : ""} ${
-                      index < 3 ? `top-rank top-${index + 1}` : ""
+                      sourceIndex < 3 ? `top-rank top-${sourceIndex + 1}` : ""
                     }`}
                     key={member.name}
                   >
                     <span className="position">
-                      {index < 3 ? <Medal aria-hidden="true" /> : index + 1}
+                      {sourceIndex < 3 ? (
+                        <Medal aria-hidden="true" />
+                      ) : (
+                        sourceIndex + 1
+                      )}
                     </span>
                     <span
                       className="avatar"
@@ -559,7 +642,9 @@ export function Dashboard() {
                     <span className="member-name">
                       <strong>{member.name}</strong>
                       <small>
-                        {member.current ? "YOU · Current rank" : `Rank ${index + 1}`}
+                        {member.current
+                          ? "YOU · Current rank"
+                          : `Rank ${sourceIndex + 1}`}
                       </small>
                     </span>
                     <strong className="member-points">
@@ -567,10 +652,18 @@ export function Dashboard() {
                       <small> pts</small>
                     </strong>
                   </div>
-                ))}
+                  );
+                })}
               </div>
 
-              <button className="leaderboard-button">View Rank</button>
+              <button
+                className="leaderboard-button"
+                onClick={() =>
+                  setShowFullLeaderboard((current) => !current)
+                }
+              >
+                {showFullLeaderboard ? "Show Top Rankings" : "View Full Leaderboard"}
+              </button>
             </aside>
           </section>
 
