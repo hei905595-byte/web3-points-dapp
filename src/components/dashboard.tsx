@@ -1,17 +1,16 @@
 "use client";
 
 import { BrowserProvider } from "ethers";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   pointsApi,
   type PointsProfile,
 } from "@/lib/mock-points-api";
 import {
-  getWalletProvider,
   shortenAddress,
-  walletInstallUrl,
+  waitForWalletProvider,
 } from "@/lib/wallet";
-import type { WalletKind } from "@/types/wallet";
+import type { EthereumProvider, WalletKind } from "@/types/wallet";
 import { WalletModal } from "./wallet-modal";
 
 function Logo() {
@@ -31,6 +30,9 @@ export function Dashboard() {
   const [actionBusy, setActionBusy] = useState("");
   const [error, setError] = useState("");
   const [sessionLoading, setSessionLoading] = useState(true);
+  const walletProviders = useRef<
+    Partial<Record<WalletKind, EthereumProvider>>
+  >({});
 
   const loadProfile = useCallback(async (walletAddress: string) => {
     const data = await pointsApi.getProfile(walletAddress);
@@ -48,19 +50,53 @@ export function Dashboard() {
       .finally(() => setSessionLoading(false));
   }, [loadProfile]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const initializeWalletProviders = async () => {
+      try {
+        const [metamask, tokenpocket] = await Promise.all([
+          waitForWalletProvider("metamask", 1000),
+          waitForWalletProvider("tokenpocket", 1000),
+        ]);
+
+        if (cancelled) return;
+        if (metamask) walletProviders.current.metamask = metamask;
+        if (tokenpocket) walletProviders.current.tokenpocket = tokenpocket;
+      } catch {
+        // Wallet injection failures must never prevent the page from rendering.
+      }
+    };
+
+    const timer =
+      typeof window !== "undefined"
+        ? window.setTimeout(initializeWalletProviders, 500)
+        : undefined;
+
+    return () => {
+      cancelled = true;
+      if (typeof window !== "undefined" && timer !== undefined) {
+        window.clearTimeout(timer);
+      }
+    };
+  }, []);
+
   const connectWallet = async (kind: WalletKind) => {
     setError("");
-    const injectedProvider = getWalletProvider(kind);
-    if (!injectedProvider) {
-      setError(
-        `${kind === "metamask" ? "MetaMask" : "TokenPocket"} 未检测到，正在打开安装页面。`,
-      );
-      window.open(walletInstallUrl(kind), "_blank", "noopener,noreferrer");
-      return;
-    }
-
     setWalletBusy(kind);
     try {
+      const injectedProvider =
+        walletProviders.current[kind] ??
+        (await waitForWalletProvider(kind, 1000));
+
+      if (!injectedProvider) {
+        setError(
+          `${kind === "metamask" ? "MetaMask" : "TokenPocket"} 未检测到，请确认钱包已安装并刷新页面。`,
+        );
+        return;
+      }
+
+      walletProviders.current[kind] = injectedProvider;
       const accounts = (await injectedProvider.request({
         method: "eth_requestAccounts",
       })) as string[];
@@ -170,13 +206,18 @@ export function Dashboard() {
           <div className="hero-actions">
             <button
               className="primary-cta"
-              onClick={() =>
-                isLoggedIn
-                  ? document
-                      .querySelector("#quests")
-                      ?.scrollIntoView({ behavior: "smooth" })
-                  : setModalOpen(true)
-              }
+              onClick={() => {
+                if (!isLoggedIn) {
+                  setModalOpen(true);
+                  return;
+                }
+
+                if (typeof window !== "undefined") {
+                  window.document
+                    .querySelector("#quests")
+                    ?.scrollIntoView({ behavior: "smooth" });
+                }
+              }}
             >
               {isLoggedIn ? "查看我的任务" : "开始赚取积分"} <span>→</span>
             </button>
