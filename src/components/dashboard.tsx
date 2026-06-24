@@ -404,12 +404,12 @@ export function Dashboard() {
               <strong>
                 {isConnected
                   ? "Your Orbit is active"
-                  : "Connect, complete tasks, and grow your rank"}
+                  : "Web3 community points, tasks, and shared progress"}
               </strong>
               <small>
                 {isConnected
                   ? "Choose an available task below to earn your next points."
-                  : "Start by connecting a wallet. No transaction is required."}
+                  : "Connect a wallet, complete community activities, and build your ranking."}
               </small>
             </div>
             <button
@@ -486,6 +486,47 @@ export function Dashboard() {
               <span className="hero-star hero-star-one" />
               <span className="hero-star hero-star-two" />
             </div>
+          </section>
+
+          <section
+            className={`platform-intro glass-card ${
+              isConnected ? "compact" : ""
+            }`}
+            aria-label="About Orbit Points"
+          >
+            <div className="platform-intro-icon">
+              <Orbit aria-hidden="true" />
+            </div>
+            <div>
+              <span className="eyebrow">WHAT IS ORBIT POINTS?</span>
+              {isConnected ? (
+                <p>
+                  Keep completing tasks and inviting friends to improve your
+                  points and community rank.
+                </p>
+              ) : (
+                <>
+                  <h3>Community participation, made visible.</h3>
+                  <p>
+                    Orbit Points is a wallet-connected Web3 community rewards
+                    dashboard. Complete verified community activities and invite
+                    friends to build a transparent points history and compare
+                    your progress on the leaderboard.
+                  </p>
+                  <p className="platform-intro-note">
+                    Points track participation inside Orbit Points. Future
+                    benefits, eligibility rules, and reward programs will be
+                    announced separately when available.
+                  </p>
+                </>
+              )}
+            </div>
+            {!isConnected && (
+              <button onClick={() => setWalletModalOpen(true)}>
+                Connect Wallet
+                <ArrowUpRight aria-hidden="true" />
+              </button>
+            )}
           </section>
 
           <section className="stats-grid" aria-label="Points overview">
@@ -683,7 +724,10 @@ export function Dashboard() {
               <span className="eyebrow">INVITE FRIENDS</span>
               <h3>Invite Friends, Earn More!</h3>
               <p>Invite your friends and grow your Orbit Points.</p>
-              <small>Referral reward: +250 Points after their first task.</small>
+              <small>
+                Build your community contribution history and improve your
+                leaderboard position over time.
+              </small>
             </div>
             <button onClick={openVerifyModal}>
               Invite Now
@@ -700,6 +744,9 @@ export function Dashboard() {
               </div>
             </div>
             <div className="footer-socials" aria-label="Social links">
+              <span className="footer-positioning">
+                Orbit Points · Web3 community task and points dashboard
+              </span>
               <a href="#twitter">X</a>
               <a href="#telegram">TG</a>
               <a href="#discord">DC</a>
