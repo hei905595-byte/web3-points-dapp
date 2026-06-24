@@ -6,10 +6,13 @@ import {
   pointsApi,
   type PointsProfile,
 } from "@/lib/mock-points-api";
-import { shortenAddress, waitForWalletProvider } from "@/lib/wallet";
-import type { EthereumProvider, WalletKind } from "@/types/wallet";
+import {
+  requestWalletAddress,
+  shortenAddress,
+  waitForWalletProvider,
+} from "@/lib/wallet";
+import type { WalletKind, WalletProvider } from "@/types/wallet";
 import { VerifyModal } from "./verify-modal";
-import { WalletDebugPanel } from "./wallet-debug-panel";
 import { WalletModal } from "./wallet-modal";
 
 const navigation = [
@@ -85,7 +88,7 @@ export function Dashboard() {
   const [actionBusy, setActionBusy] = useState("");
   const [error, setError] = useState("");
   const walletProviders = useRef<
-    Partial<Record<WalletKind, EthereumProvider>>
+    Partial<Record<WalletKind, WalletProvider>>
   >({});
 
   function openVerifyModal() {
@@ -158,10 +161,7 @@ export function Dashboard() {
       }
 
       walletProviders.current[kind] = provider;
-      const accounts = (await provider.request({
-        method: "eth_requestAccounts",
-      })) as string[];
-      const nextAddress = accounts?.[0];
+      const nextAddress = await requestWalletAddress(kind, provider);
 
       if (!nextAddress) {
         setError("No wallet account is available.");
@@ -434,7 +434,6 @@ export function Dashboard() {
         open={verifyModalOpen}
         onClose={() => setVerifyModalOpen(false)}
       />
-      <WalletDebugPanel />
     </div>
   );
 }

@@ -14,7 +14,9 @@
   --green: #54e6a5;
   --radius: 16px;
   --transition: 0.25s ease;
-  --glow: 0 18px 55px rgba(124, 58, 237, 0.2);
+  --glow:
+    0 22px 60px rgba(4, 2, 18, 0.44),
+    0 0 34px rgba(124, 58, 237, 0.2);
 }
 
 * {
@@ -26,26 +28,43 @@ html {
 }
 
 body {
+  position: relative;
+  min-height: 100vh;
   margin: 0;
   color: var(--text);
   background:
-    radial-gradient(circle at 78% 8%, rgba(109, 40, 217, 0.19), transparent 29%),
-    radial-gradient(circle at 28% 85%, rgba(76, 29, 149, 0.16), transparent 26%),
+    radial-gradient(circle at 78% 8%, rgba(109, 40, 217, 0.28), transparent 31%),
+    radial-gradient(circle at 16% 35%, rgba(37, 99, 235, 0.12), transparent 27%),
+    radial-gradient(circle at 28% 85%, rgba(76, 29, 149, 0.22), transparent 29%),
     var(--background);
+  background-attachment: fixed;
   font-family: "Inter", sans-serif;
+  line-height: 1.5;
 }
 
 body::before {
   position: fixed;
-  z-index: -1;
+  z-index: 0;
   inset: 0;
-  opacity: 0.22;
+  opacity: 0.32;
   background-image:
     radial-gradient(circle at 15% 18%, white 0 1px, transparent 1.5px),
     radial-gradient(circle at 72% 26%, white 0 1px, transparent 1.5px),
     radial-gradient(circle at 36% 68%, #c4b5fd 0 1px, transparent 1.5px),
-    radial-gradient(circle at 88% 77%, white 0 1px, transparent 1.5px);
-  background-size: 230px 230px, 310px 310px, 270px 270px, 360px 360px;
+    radial-gradient(circle at 88% 77%, white 0 1px, transparent 1.5px),
+    radial-gradient(circle at 50% 50%, rgba(147, 197, 253, 0.8) 0 0.7px, transparent 1.2px);
+  background-size: 230px 230px, 310px 310px, 270px 270px, 360px 360px, 170px 170px;
+  content: "";
+  pointer-events: none;
+}
+
+body::after {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(139, 92, 246, 0.12), transparent 46%),
+    linear-gradient(180deg, transparent 60%, rgba(5, 4, 16, 0.36));
   content: "";
   pointer-events: none;
 }
@@ -71,6 +90,8 @@ a:focus-visible {
 }
 
 .orbit-app {
+  position: relative;
+  z-index: 1;
   min-height: 100vh;
 }
 
@@ -387,11 +408,23 @@ a:focus-visible {
 }
 
 .glass-card {
-  border: 1px solid var(--line);
+  position: relative;
+  border: 1px solid rgba(167, 139, 250, 0.24);
   border-radius: var(--radius);
-  background: linear-gradient(145deg, rgba(35, 29, 68, 0.68), rgba(17, 15, 38, 0.62));
-  box-shadow: inset 0 1px rgba(255, 255, 255, 0.035);
+  background:
+    radial-gradient(circle at 12% 0, rgba(139, 92, 246, 0.1), transparent 42%),
+    linear-gradient(145deg, rgba(35, 29, 68, 0.58), rgba(17, 15, 38, 0.48));
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.06),
+    0 14px 38px rgba(3, 2, 15, 0.3),
+    0 0 20px rgba(124, 58, 237, 0.08);
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition:
+    transform 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    background 0.25s ease;
 }
 
 .stats-grid {
@@ -402,48 +435,57 @@ a:focus-visible {
 
 .stat-card {
   grid-column: span 3;
-  min-height: 142px;
+  min-height: 154px;
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 24px;
-  transition: var(--transition);
+  gap: 22px;
+  padding: 26px;
 }
 
 .stat-card:hover,
-.task-card:hover {
+.task-card:hover,
+.leaderboard-panel:hover {
   transform: translateY(-4px);
-  border-color: var(--line-hover);
+  border-color: rgba(196, 181, 253, 0.52);
   box-shadow: var(--glow);
+  background:
+    radial-gradient(circle at 12% 0, rgba(139, 92, 246, 0.16), transparent 44%),
+    linear-gradient(145deg, rgba(39, 31, 76, 0.66), rgba(18, 15, 41, 0.56));
 }
 
 .stat-icon {
-  width: 48px;
-  height: 48px;
+  width: 58px;
+  height: 58px;
   display: grid;
   flex: 0 0 auto;
   place-items: center;
-  border: 1px solid rgba(196, 181, 253, 0.18);
-  border-radius: 14px;
+  border: 1px solid rgba(196, 181, 253, 0.32);
+  border-radius: 16px;
   color: var(--purple-light);
-  background: linear-gradient(145deg, rgba(139, 92, 246, 0.22), rgba(217, 70, 239, 0.08));
-  box-shadow: 0 0 24px rgba(124, 58, 237, 0.18);
-  font-size: 21px;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(216, 180, 254, 0.24), transparent 42%),
+    linear-gradient(145deg, rgba(139, 92, 246, 0.3), rgba(217, 70, 239, 0.1));
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.1),
+    0 0 28px rgba(124, 58, 237, 0.28);
+  font-size: 26px;
 }
 
 .stat-card span,
 .stat-card small {
   display: block;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
+  line-height: 1.5;
 }
 
 .stat-card strong {
   display: block;
-  margin: 7px 0 5px;
+  margin: 8px 0 6px;
   font-family: "Space Grotesk", sans-serif;
-  font-size: 28px;
+  font-size: 30px;
   letter-spacing: -0.04em;
+  line-height: 1.05;
 }
 
 .content-grid {
@@ -458,7 +500,7 @@ a:focus-visible {
 
 .leaderboard-panel {
   grid-column: span 4;
-  padding: 24px;
+  padding: 26px;
 }
 
 .section-title {
@@ -489,13 +531,12 @@ a:focus-visible {
 }
 
 .task-card {
-  min-height: 132px;
+  min-height: 142px;
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 18px;
-  padding: 20px 22px;
-  transition: var(--transition);
+  gap: 22px;
+  padding: 23px 24px;
 }
 
 .task-card.completed {
@@ -503,14 +544,17 @@ a:focus-visible {
 }
 
 .task-symbol {
-  width: 46px;
-  height: 46px;
+  width: 54px;
+  height: 54px;
   display: grid;
   place-items: center;
   border-radius: 14px;
   color: white;
   background: linear-gradient(145deg, #7c3aed, #4c1d95);
-  box-shadow: 0 0 24px rgba(124, 58, 237, 0.26);
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.12),
+    0 0 28px rgba(124, 58, 237, 0.34);
+  font-size: 20px;
 }
 
 .task-copy > span {
@@ -522,16 +566,17 @@ a:focus-visible {
 }
 
 .task-copy h4 {
-  margin: 6px 0;
+  margin: 7px 0;
   font-family: "Space Grotesk", sans-serif;
-  font-size: 15px;
+  font-size: 16px;
+  line-height: 1.35;
 }
 
 .task-copy p {
   margin: 0;
   color: var(--muted);
-  font-size: 11px;
-  line-height: 1.5;
+  font-size: 12px;
+  line-height: 1.65;
 }
 
 .task-action {

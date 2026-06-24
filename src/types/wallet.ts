@@ -12,6 +12,31 @@ export interface EthereumProvider {
   removeListener?(event: string, listener: (...args: unknown[]) => void): void;
 }
 
+export interface TronProvider {
+  ready?: boolean;
+  defaultAddress?: {
+    base58?: string;
+    hex?: string;
+  };
+  request?(args: {
+    method: string;
+    params?: unknown[] | Record<string, unknown>;
+  }): Promise<unknown>;
+}
+
+export interface TokenPocketProvider {
+  ethereum?: EthereumProvider;
+  request?(args: {
+    method: string;
+    params?: unknown[] | Record<string, unknown>;
+  }): Promise<unknown>;
+}
+
+export type WalletProvider =
+  | EthereumProvider
+  | TronProvider
+  | TokenPocketProvider;
+
 export interface Eip6963ProviderDetail {
   info: {
     name: string;
@@ -23,13 +48,9 @@ export interface Eip6963ProviderDetail {
 declare global {
   interface Window {
     ethereum?: EthereumProvider;
-    tp?: EthereumProvider & {
-      ethereum?: EthereumProvider;
-    };
-    tokenpocket?: EthereumProvider & {
-      ethereum?: EthereumProvider;
-    };
-    tronWeb?: unknown;
+    tp?: TokenPocketProvider;
+    tokenpocket?: TokenPocketProvider;
+    tronWeb?: TronProvider;
   }
 
   interface WindowEventMap {
