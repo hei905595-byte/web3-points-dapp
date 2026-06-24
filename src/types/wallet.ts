@@ -12,6 +12,14 @@ export interface EthereumProvider {
   removeListener?(event: string, listener: (...args: unknown[]) => void): void;
 }
 
+export interface Eip6963ProviderDetail {
+  info: {
+    name: string;
+    rdns: string;
+  };
+  provider: EthereumProvider;
+}
+
 declare global {
   interface Window {
     ethereum?: EthereumProvider;
@@ -21,5 +29,10 @@ declare global {
     tokenpocket?: EthereumProvider & {
       ethereum?: EthereumProvider;
     };
+    tronWeb?: unknown;
+  }
+
+  interface WindowEventMap {
+    "eip6963:announceProvider": CustomEvent<Eip6963ProviderDetail>;
   }
 }

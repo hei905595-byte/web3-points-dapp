@@ -9,6 +9,7 @@ import {
 import { shortenAddress, waitForWalletProvider } from "@/lib/wallet";
 import type { EthereumProvider, WalletKind } from "@/types/wallet";
 import { VerifyModal } from "./verify-modal";
+import { WalletDebugPanel } from "./wallet-debug-panel";
 import { WalletModal } from "./wallet-modal";
 
 const navigation = [
@@ -97,8 +98,8 @@ export function Dashboard() {
     const initializeWallets = async () => {
       try {
         const [metamask, tokenpocket] = await Promise.all([
-          waitForWalletProvider("metamask", 1000),
-          waitForWalletProvider("tokenpocket", 1000),
+          waitForWalletProvider("metamask"),
+          waitForWalletProvider("tokenpocket"),
         ]);
 
         if (cancelled) return;
@@ -147,7 +148,7 @@ export function Dashboard() {
     try {
       const provider =
         walletProviders.current[kind] ??
-        (await waitForWalletProvider(kind, 1000));
+        (await waitForWalletProvider(kind));
 
       if (!provider) {
         setError(
@@ -433,6 +434,7 @@ export function Dashboard() {
         open={verifyModalOpen}
         onClose={() => setVerifyModalOpen(false)}
       />
+      <WalletDebugPanel />
     </div>
   );
 }
