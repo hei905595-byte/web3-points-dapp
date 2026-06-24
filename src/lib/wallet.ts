@@ -246,6 +246,46 @@ export async function requestWalletAddress(
   return null;
 }
 
+export type WalletSignResult = "signed" | "unsupported";
+
+export async function signWalletLogin(
+  kind: WalletKind,
+  provider: WalletProvider,
+  address: string,
+): Promise<WalletSignResult> {
+  if (typeof window === "undefined") return "unsupported";
+
+  const message = "Sign in to Orbit Points";
+
+  try {
+    if (kind === "metamask") {
+      if (!isProvider(provider)) return "unsupported";
+      await provider.request({
+        method: "personal_sign",
+        params: [message, address],
+      });
+      return "signed";
+    }
+
+    const evmProvider = getTokenPocketEvmProvider();
+    if (evmProvider) {
+      await evmProvider.request({
+        method: "personal_sign",
+        params: [message, address],
+      });
+      return "signed";
+    }
+
+    const tronSign = window.tronWeb?.trx?.sign;
+    if (typeof tronSign !== "function") return "unsupported";
+
+    await tronSign.call(window.tronWeb?.trx, message);
+    return "signed";
+  } catch (error) {
+    throw error;
+  }
+}
+
 export function shortenAddress(address: string) {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }

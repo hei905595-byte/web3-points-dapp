@@ -18,6 +18,9 @@ export interface TronProvider {
     base58?: string;
     hex?: string;
   };
+  trx?: {
+    sign?(message: string): Promise<unknown>;
+  };
   request?(args: {
     method: string;
     params?: unknown[] | Record<string, unknown>;

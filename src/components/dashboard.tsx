@@ -8,6 +8,7 @@ import {
 } from "@/lib/mock-points-api";
 import {
   requestWalletAddress,
+  signWalletLogin,
   shortenAddress,
   waitForWalletProvider,
 } from "@/lib/wallet";
@@ -24,11 +25,19 @@ const navigation = [
   { label: "Profile", href: "#profile", icon: "user" },
 ];
 
-const leaderboard = [
+interface LeaderboardMember {
+  name: string;
+  points: number;
+  color: string;
+  current?: boolean;
+}
+
+const leaderboard: LeaderboardMember[] = [
   { name: "Alex Morgan", points: 12840, color: "#8b5cf6" },
   { name: "Mia Chen", points: 11290, color: "#ec4899" },
   { name: "Noah Williams", points: 9840, color: "#06b6d4" },
-  { name: "You", points: 1280, color: "#a78bfa", current: true },
+  { name: "Sofia Lee", points: 8650, color: "#f59e0b" },
+  { name: "Ethan Park", points: 7920, color: "#10b981" },
 ];
 
 function NavIcon({ name }: { name: string }) {
@@ -169,8 +178,23 @@ export function Dashboard() {
       }
 
       setAddress(nextAddress);
-      setWalletModalOpen(false);
-      checkAddressBalance();
+      try {
+        const signResult = await signWalletLogin(kind, provider, nextAddress);
+        checkAddressBalance();
+
+        if (signResult === "unsupported") {
+          setError("当前钱包环境暂不支持签名");
+          return;
+        }
+
+        setWalletModalOpen(false);
+      } catch (caught) {
+        setError(
+          caught instanceof Error
+            ? caught.message
+            : "Signature request was declined.",
+        );
+      }
     } catch (caught) {
       setError(
         caught instanceof Error
@@ -238,6 +262,15 @@ export function Dashboard() {
     },
   ];
   const tasks = profile?.tasks ?? createInitialProfile().tasks;
+  const leaderboardMembers: LeaderboardMember[] = [
+    ...leaderboard,
+    {
+      name: "You",
+      points: isConnected ? (profile?.balance ?? 0) : 0,
+      color: "#a78bfa",
+      current: true,
+    },
+  ];
 
   return (
     <div className="orbit-app">
@@ -297,15 +330,22 @@ export function Dashboard() {
         </header>
 
         <main className="dashboard-main" id="dashboard">
-          <section className="welcome-row">
-            <div>
+          <section className="hero-card glass-card">
+            <div className="hero-copy">
               <span className="eyebrow">ORBIT POINTS DASHBOARD</span>
               <h2>Welcome to your Orbit</h2>
               <p>Track Points, complete Tasks, and view your Rank.</p>
+              <div className="season-chip">
+                <span />
+                Rewards active
+              </div>
             </div>
-            <div className="season-chip">
-              <span />
-              Rewards active
+            <div className="hero-visual" aria-hidden="true">
+              <span className="hero-planet" />
+              <span className="hero-orbit hero-orbit-one" />
+              <span className="hero-orbit hero-orbit-two" />
+              <span className="hero-star hero-star-one" />
+              <span className="hero-star hero-star-two" />
             </div>
           </section>
 
@@ -333,12 +373,12 @@ export function Dashboard() {
               </div>
 
               <div className="task-list">
-                {tasks.map((task, index) => (
+                {tasks.map((task) => (
                   <article
                     className={`glass-card task-card ${
                       task.completed ? "completed" : ""
                     }`}
-                    id={index === 2 ? "bonus-tasks" : undefined}
+                    id={task.id === "invite-friends" ? "bonus-tasks" : undefined}
                     key={task.id}
                   >
                     <div className="task-symbol">{task.icon}</div>
@@ -375,7 +415,7 @@ export function Dashboard() {
               </div>
 
               <div className="leaderboard-list">
-                {leaderboard.map((member, index) => (
+                {leaderboardMembers.map((member, index) => (
                   <div
                     className={member.current ? "current-user" : ""}
                     key={member.name}
@@ -406,18 +446,34 @@ export function Dashboard() {
             <div className="invite-orbit" aria-hidden="true">
               <span />
             </div>
+            <span className="invite-gift" aria-hidden="true">
+              ✦
+            </span>
             <div>
               <span className="eyebrow">INVITE FRIENDS</span>
-              <h3>Grow your Orbit together</h3>
-              <p>Invite Friends and explore more Tasks and Rewards.</p>
+              <h3>Invite Friends, Earn More!</h3>
+              <p>Invite your friends and grow your Orbit Points.</p>
             </div>
             <button onClick={openVerifyModal}>Invite Now</button>
           </section>
 
-          <section className="profile-anchor" id="profile">
-            <span>Orbit Points</span>
-            <span>Points · Tasks · Rewards · Rank</span>
-          </section>
+          <footer className="social-footer glass-card" id="profile">
+            <div>
+              <strong>Stay in the Orbit</strong>
+              <p>Follow us on social media for updates and more rewards!</p>
+            </div>
+            <div className="social-links" aria-label="Social media">
+              <a href="#twitter" aria-label="Twitter">
+                X
+              </a>
+              <a href="#telegram" aria-label="Telegram">
+                TG
+              </a>
+              <a href="#discord" aria-label="Discord">
+                DC
+              </a>
+            </div>
+          </footer>
         </main>
       </div>
 

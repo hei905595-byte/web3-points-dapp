@@ -34,8 +34,8 @@ export function WalletModal({
         <span className="modal-kicker">ORBIT POINTS</span>
         <h2 id="wallet-title">Connect Wallet</h2>
         <p className="modal-copy">
-          Choose MetaMask or TokenPocket. Connecting only requests your wallet
-          account.
+          Choose MetaMask or TokenPocket, connect your account, and sign the
+          login message.
         </p>
 
         <div className="wallet-list">
@@ -66,7 +66,9 @@ export function WalletModal({
         </div>
 
         {error && <p className="modal-error">{error}</p>}
-        <p className="modal-footnote">Orbit Points does not request a signature.</p>
+        <p className="modal-footnote">
+          Signing verifies login only. It does not submit a transaction.
+        </p>
       </section>
     </div>
   );

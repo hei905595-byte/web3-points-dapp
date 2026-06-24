@@ -2,7 +2,11 @@ export interface PointTask {
   id: string;
   title: string;
   description: string;
-  category: "Daily Check-in" | "Daily Tasks" | "Bonus Tasks";
+  category:
+    | "Daily Check-in"
+    | "Daily Tasks"
+    | "Community"
+    | "Leaderboard";
   reward: number;
   icon: string;
   completed: boolean;
@@ -40,19 +44,28 @@ export function createInitialProfile(): PointsProfile {
       {
         id: "daily-tasks",
         title: "Complete Daily Tasks",
-        description: "Review today’s Tasks and update your Points progress.",
+        description: "Complete today's activity list and grow your Points.",
         category: "Daily Tasks",
         reward: 120,
-        icon: "◇",
+        icon: "◎",
         completed: false,
       },
       {
-        id: "bonus-tasks",
-        title: "Explore Bonus Tasks",
-        description: "Open the Bonus Tasks section and review available Rewards.",
-        category: "Bonus Tasks",
+        id: "invite-friends",
+        title: "Invite Friends",
+        description: "Invite friends to discover Orbit Points together.",
+        category: "Community",
         reward: 180,
-        icon: "✦",
+        icon: "+",
+        completed: false,
+      },
+      {
+        id: "view-leaderboard",
+        title: "View Leaderboard",
+        description: "Check the latest rankings and compare your progress.",
+        category: "Leaderboard",
+        reward: 40,
+        icon: "↗",
         completed: false,
       },
     ],
@@ -70,7 +83,20 @@ function read(address: string): PointsProfile {
       return profile;
     }
 
-    return JSON.parse(raw) as PointsProfile;
+    const stored = JSON.parse(raw) as PointsProfile;
+    const initial = createInitialProfile();
+    const storedTasks = new Map(
+      (stored.tasks ?? []).map((task) => [task.id, task]),
+    );
+
+    return {
+      ...initial,
+      ...stored,
+      tasks: initial.tasks.map((task) => ({
+        ...task,
+        completed: storedTasks.get(task.id)?.completed ?? false,
+      })),
+    };
   } catch {
     return createInitialProfile();
   }
