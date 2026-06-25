@@ -13,10 +13,10 @@
     "ui:baseline:full": "node scripts/ui-tools.mjs baseline-full",
     "ui:compare": "node scripts/ui-tools.mjs compare",
     "ui:compare:full": "node scripts/ui-tools.mjs compare-full",
-    "ui:help": "node scripts/ui-tools.mjs help"
+    "ui:help": "node scripts/ui-tools.mjs help",
+    "contracts:check": "node scripts/validate-contracts.cjs"
   },
   "dependencies": {
-    "ethers": "^6.13.5",
     "lucide-react": "^1.21.0",
     "next": "^15.2.4",
     "react": "^19.0.0",

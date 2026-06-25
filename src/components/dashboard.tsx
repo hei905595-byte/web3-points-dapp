@@ -26,13 +26,13 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import {
-  createInitialProfile,
+  createEmptyProfile,
   pointsApi,
   type PointsProfile,
-} from "@/lib/mock-points-api";
+} from "@/lib/points-api";
 import {
   requestWalletAddress,
-  signWalletLogin,
+  signWalletMessage,
   shortenAddress,
   waitForWalletProvider,
 } from "@/lib/wallet";
@@ -60,22 +60,12 @@ interface LeaderboardMember {
   current?: boolean;
 }
 
-const leaderboard: LeaderboardMember[] = [
-  { name: "Alex Morgan", points: 12840, color: "#8b5cf6" },
-  { name: "Mia Chen", points: 11290, color: "#ec4899" },
-  { name: "Noah Williams", points: 9840, color: "#06b6d4" },
-  { name: "Sofia Lee", points: 8650, color: "#f59e0b" },
-  { name: "Ethan Park", points: 7920, color: "#10b981" },
-];
-
 const taskIcons: Record<string, LucideIcon> = {
   "daily-check-in": CheckCircle2,
   "daily-tasks": Zap,
   "invite-friends": Users,
   "view-leaderboard": Trophy,
 };
-
-function checkAddressBalance() {}
 
 export function Dashboard() {
   const [address, setAddress] = useState("");
@@ -87,7 +77,8 @@ export function Dashboard() {
   const [actionBusy, setActionBusy] = useState("");
   const [error, setError] = useState("");
   const [uiReady, setUiReady] = useState(false);
-  const [network, setNetwork] = useState<"ETH" | "TRON" | "—">("—");
+  const [network, setNetwork] = useState<"TRON" | "OFFLINE">("OFFLINE");
+  const [leaderboard, setLeaderboard] = useState<LeaderboardMember[]>([]);
   const [showAllTasks, setShowAllTasks] = useState(false);
   const [showFullLeaderboard, setShowFullLeaderboard] = useState(false);
   const walletProviders = useRef<
@@ -124,13 +115,13 @@ export function Dashboard() {
 
     const initializeWallets = async () => {
       try {
-        const [metamask, tokenpocket] = await Promise.all([
-          waitForWalletProvider("metamask"),
+        const [tronlink, tokenpocket] = await Promise.all([
+          waitForWalletProvider("tronlink"),
           waitForWalletProvider("tokenpocket"),
         ]);
 
         if (cancelled) return;
-        if (metamask) walletProviders.current.metamask = metamask;
+        if (tronlink) walletProviders.current.tronlink = tronlink;
         if (tokenpocket) walletProviders.current.tokenpocket = tokenpocket;
       } catch {
         // A wallet injection failure must not block the dashboard UI.
@@ -160,13 +151,37 @@ export function Dashboard() {
         if (active) setProfile(data);
       })
       .catch(() => {
-        if (active) setProfile(createInitialProfile());
+        if (active) setProfile(createEmptyProfile());
       });
 
     return () => {
       active = false;
     };
   }, [address]);
+
+  useEffect(() => {
+    let active = true;
+    pointsApi
+      .getLeaderboard(20)
+      .then((members) => {
+        if (!active) return;
+        setLeaderboard(
+          members.map((member, index) => ({
+            name: shortenAddress(member.address),
+            points: member.points,
+            color: ["#8b5cf6", "#ec4899", "#06b6d4", "#f59e0b", "#10b981"][
+              index % 5
+            ],
+          })),
+        );
+      })
+      .catch(() => {
+        if (active) setLeaderboard([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [profile?.balance]);
 
   const connectWallet = async (kind: WalletKind) => {
     setError("");
@@ -179,7 +194,7 @@ export function Dashboard() {
 
       if (!provider) {
         setError(
-          `${kind === "metamask" ? "MetaMask" : "TokenPocket"} was not detected. Open this page inside the wallet browser and try again.`,
+          `${kind === "tronlink" ? "TronLink" : "TokenPocket"} was not detected. Open this page inside the wallet browser and try again.`,
         );
         return;
       }
@@ -193,22 +208,16 @@ export function Dashboard() {
       }
 
       setAddress(nextAddress);
-      setNetwork(
-        kind === "tokenpocket" &&
-          typeof window !== "undefined" &&
-          !window.ethereum &&
-          Boolean(window.tronWeb)
-          ? "TRON"
-          : "ETH",
-      );
+      setNetwork("TRON");
       try {
-        const signResult = await signWalletLogin(kind, provider, nextAddress);
-        checkAddressBalance();
-
-        if (signResult === "unsupported") {
-          setError("Signing is not supported in the current wallet environment.");
-          return;
-        }
+        const challenge = await pointsApi.getChallenge(nextAddress);
+        const signature = await signWalletMessage(kind, challenge.message);
+        const session = await pointsApi.verifyLogin(
+          nextAddress,
+          challenge.nonce,
+          signature,
+        );
+        pointsApi.setSession(session.token);
 
         setWalletModalOpen(false);
       } catch (caught) {
@@ -233,7 +242,8 @@ export function Dashboard() {
     setAddress("");
     setProfile(null);
     setError("");
-    setNetwork("—");
+    pointsApi.setSession("");
+    setNetwork("OFFLINE");
   };
 
   const runTask = async (taskId: string) => {
@@ -244,13 +254,13 @@ export function Dashboard() {
 
     setActionBusy(taskId);
     try {
-      if (taskId === "daily-check-in") {
-        setProfile(await pointsApi.checkIn(address));
-      } else {
-        setProfile(await pointsApi.completeTask(address, taskId));
-      }
-    } catch {
-      setError("The task could not be updated. Please try again.");
+      setProfile(await pointsApi.completeTask(address, taskId));
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "The task could not be updated. Please try again.",
+      );
     } finally {
       setActionBusy("");
     }
@@ -305,7 +315,7 @@ export function Dashboard() {
       accent: "orange",
     },
   ];
-  const tasks = profile?.tasks ?? createInitialProfile().tasks;
+  const tasks = profile?.tasks ?? [];
   const visibleTasks = showAllTasks ? tasks : tasks.slice(0, 3);
   const isLoading = !uiReady || Boolean(walletBusy) || (isConnected && !profile);
   const leaderboardMembers: LeaderboardMember[] = [
@@ -319,10 +329,12 @@ export function Dashboard() {
   ];
   const visibleLeaderboardMembers = showFullLeaderboard
     ? leaderboardMembers
-    : [
-        ...leaderboardMembers.slice(0, 3),
-        leaderboardMembers[leaderboardMembers.length - 1],
-      ];
+    : leaderboardMembers.length > 3
+      ? [
+          ...leaderboardMembers.slice(0, 3),
+          leaderboardMembers[leaderboardMembers.length - 1],
+        ]
+      : leaderboardMembers;
 
   return (
     <div className="orbit-app">
@@ -360,6 +372,20 @@ export function Dashboard() {
           <button onClick={openVerifyModal}>View Profile</button>
         </div>
       </aside>
+
+      <nav className="mobile-nav-bar" aria-label="Mobile navigation">
+        {navigation.map((item) => (
+          <a
+            className={activeSection === item.label ? "active" : ""}
+            href={item.href}
+            key={item.label}
+            onClick={() => setActiveSection(item.label)}
+          >
+            <item.icon aria-hidden="true" />
+            <span>{item.label.replace(" Friends", "")}</span>
+          </a>
+        ))}
+      </nav>
 
       <div className="app-content">
         <header className="top-header">
@@ -754,7 +780,7 @@ export function Dashboard() {
             <div className="footer-status">
               <span>
                 <i />
-                {network === "—" ? "Network ready" : `${network} online`}
+                {network === "OFFLINE" ? "Network ready" : `${network} online`}
               </span>
               <small>v1.0 UI</small>
             </div>
@@ -772,8 +798,14 @@ export function Dashboard() {
         open={walletModalOpen}
       />
       <VerifyModal
+        address={address}
         open={verifyModalOpen}
         onClose={() => setVerifyModalOpen(false)}
+        onUpdated={() => {
+          if (address) {
+            pointsApi.getProfile(address).then(setProfile).catch(() => {});
+          }
+        }}
       />
     </div>
   );

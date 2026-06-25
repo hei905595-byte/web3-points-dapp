@@ -32,24 +32,23 @@ export function WalletModal({
           ×
         </button>
         <span className="modal-kicker">ORBIT POINTS</span>
-        <h2 id="wallet-title">Connect Wallet</h2>
+        <h2 id="wallet-title">Connect TRON Wallet</h2>
         <p className="modal-copy">
-          Choose MetaMask or TokenPocket, connect your account, and sign the
-          login message.
+          Connect a TRON wallet and sign a one-time login challenge.
         </p>
 
         <div className="wallet-list">
           <button
             className="wallet-option"
             disabled={Boolean(busy)}
-            onClick={() => onConnect("metamask")}
+            onClick={() => onConnect("tronlink")}
           >
-            <span className="wallet-logo metamask-logo">M</span>
+            <span className="wallet-logo metamask-logo">TL</span>
             <span>
-              <strong>MetaMask</strong>
-              <small>Browser and mobile wallet</small>
+              <strong>TronLink</strong>
+              <small>TRON browser and mobile wallet</small>
             </span>
-            <span>{busy === "metamask" ? "..." : "→"}</span>
+            <span>{busy === "tronlink" ? "..." : "→"}</span>
           </button>
           <button
             className="wallet-option"
@@ -59,7 +58,7 @@ export function WalletModal({
             <span className="wallet-logo tp-logo">TP</span>
             <span>
               <strong>TokenPocket</strong>
-              <small>Mobile DApp browser</small>
+              <small>TRON mobile DApp browser</small>
             </span>
             <span>{busy === "tokenpocket" ? "..." : "→"}</span>
           </button>

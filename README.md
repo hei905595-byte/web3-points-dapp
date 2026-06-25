@@ -1,25 +1,48 @@
 # Orbit Points
 
-Orbit Points is a responsive Next.js Web3 dashboard designed for direct Vercel deployment.
+TRON points dashboard with three Solidity contracts, a wallet-authenticated
+frontend, and a separate administrator gateway.
 
-## Features
+## Components
 
-- Dark glassmorphism dashboard with responsive desktop and mobile navigation
-- MetaMask and TokenPocket injected wallet support
-- SSR-safe wallet detection with delayed TokenPocket provider polling
-- Frontend-only mock Points and Tasks stored in localStorage
-- No frontend API requests, signature requests, database, or chain interaction
-- Reserved `checkAddressBalance()` and `VerifyModal` interfaces
+- `contracts/PointsStorage.sol` stores points, streaks, invitations, rebates,
+  administrators, authorized contracts, and the user registry.
+- `contracts/TaskVerify.sol` settles a daily task and points atomically.
+  `finishTaskAndStreakAtom` also updates check-in streak state in that same
+  transaction.
+- `contracts/InviteRebate.sol` awards invitation rebates through
+  `PointsStorage`.
+- The Next.js frontend supports TronLink and TokenPocket TRON wallets. It signs
+  a one-time challenge and never signs a contract write transaction.
+- `../gateway-server` owns the administrator signer and exposes the frontend
+  and Telegram APIs.
 
-## Local development
+## Validate
 
 ```powershell
-npm.cmd install
+npm.cmd run contracts:check
+npm.cmd run build
+```
+
+## Local frontend
+
+Copy `.env.example` to `.env.local`, then:
+
+```powershell
 npm.cmd run dev
 ```
 
-Open <http://localhost:3000>.
+## Nile deployment
 
-## Vercel
+Copy `.env.deploy.example` to a private environment file and load those
+variables without committing the file. Then run:
 
-Import the repository into Vercel and deploy with the default Next.js settings.
+```powershell
+tronbox migrate --network nile --reset
+```
+
+Deployment order and cross-contract authorization are handled by
+`migrations/1_deploy_contracts.js`. Copy the three printed contract addresses
+to the gateway environment.
+
+Never put `TRON_PRIVATE_KEY` in a frontend or committed environment file.
