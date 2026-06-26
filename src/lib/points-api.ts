@@ -28,8 +28,15 @@ export interface LeaderboardMember {
   points: number;
 }
 
-const API_URL =
-  process.env.NEXT_PUBLIC_GATEWAY_URL || "http://localhost:8787";
+function gatewayUrl() {
+  if (process.env.NEXT_PUBLIC_GATEWAY_URL) {
+    return process.env.NEXT_PUBLIC_GATEWAY_URL.replace(/\/$/, "");
+  }
+  if (typeof window !== "undefined") {
+    return `${window.location.protocol}//${window.location.hostname}:8787`;
+  }
+  return "http://localhost:8787";
+}
 
 let sessionToken = "";
 
@@ -37,16 +44,23 @@ async function request<T>(
   path: string,
   init: RequestInit = {},
 ): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(sessionToken
-        ? { Authorization: `Bearer ${sessionToken}` }
-        : {}),
-      ...init.headers,
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${gatewayUrl()}${path}`, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        ...(sessionToken
+          ? { Authorization: `Bearer ${sessionToken}` }
+          : {}),
+        ...init.headers,
+      },
+    });
+  } catch {
+    throw new Error(
+      "Cannot reach the Orbit gateway. Check that the backend is running and accessible from this device.",
+    );
+  }
   const data = (await response.json().catch(() => ({}))) as {
     error?: string;
   };
