@@ -90,21 +90,23 @@ export function Dashboard() {
     {
       key: "points",
       label: "积分中心",
-      href: process.env.NEXT_PUBLIC_POINTS_URL || "#dashboard",
+      href:
+        process.env.NEXT_PUBLIC_POINTS_URL ||
+        "https://web3-points-dapp.vercel.app/",
     },
     {
       key: "query",
       label: "双链查询",
       href:
         process.env.NEXT_PUBLIC_QUERY_URL ||
-        "http://127.0.0.1:4174/dual-chain-query-ui/",
+        "https://heibai-dual-chain-query.vercel.app/",
     },
     {
       key: "guard",
       label: "安全检测",
       href:
         process.env.NEXT_PUBLIC_GUARD_URL ||
-        "http://127.0.0.1:4174/heibai-address-guard/",
+        "https://heibai-address-guard.vercel.app/",
     },
   ];
   const [address, setAddress] = useState("");
