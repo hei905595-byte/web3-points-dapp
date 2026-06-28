@@ -2670,6 +2670,40 @@ body::after {
   font-weight: 800;
 }
 
+.points-suite-nav {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 0 16px 12px;
+  border-bottom: 1px solid rgba(219, 231, 243, 0.78);
+  background: rgba(248, 251, 255, 0.92);
+}
+
+.points-suite-nav a {
+  min-height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d5e3f2;
+  border-radius: 10px;
+  color: #68809a;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.points-suite-nav a:hover,
+.points-suite-nav a:focus-visible {
+  color: var(--points-blue);
+  border-color: #9fc7f6;
+}
+
+.points-suite-nav a.active {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--points-blue), var(--points-cyan));
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.18);
+}
+
 .points-wallet {
   min-height: 38px;
   display: inline-flex;

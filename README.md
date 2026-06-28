@@ -1,5 +1,15 @@
 # Orbit Points
 
+## Cross-project navigation
+
+Set these public environment variables to link the three deployed UIs:
+
+```env
+NEXT_PUBLIC_POINTS_URL=https://points.your-domain.com
+NEXT_PUBLIC_QUERY_URL=https://query.your-domain.com
+NEXT_PUBLIC_GUARD_URL=https://guard.your-domain.com
+```
+
 TRON points dashboard with three Solidity contracts, a wallet-authenticated
 frontend, and a separate administrator gateway.
 

@@ -86,6 +86,27 @@ const previewTasks: PointTask[] = [
 ];
 
 export function Dashboard() {
+  const suiteLinks = [
+    {
+      key: "points",
+      label: "积分中心",
+      href: process.env.NEXT_PUBLIC_POINTS_URL || "#dashboard",
+    },
+    {
+      key: "query",
+      label: "双链查询",
+      href:
+        process.env.NEXT_PUBLIC_QUERY_URL ||
+        "http://127.0.0.1:4174/dual-chain-query-ui/",
+    },
+    {
+      key: "guard",
+      label: "安全检测",
+      href:
+        process.env.NEXT_PUBLIC_GUARD_URL ||
+        "http://127.0.0.1:4174/heibai-address-guard/",
+    },
+  ];
   const [address, setAddress] = useState("");
   const [profile, setProfile] = useState<PointsProfile | null>(null);
   const [walletModalOpen, setWalletModalOpen] = useState(false);
@@ -341,6 +362,19 @@ export function Dashboard() {
           </button>
         )}
       </header>
+
+      <nav className="points-suite-nav" aria-label="产品导航">
+        {suiteLinks.map((link) => (
+          <a
+            className={link.key === "points" ? "active" : undefined}
+            href={link.href}
+            aria-current={link.key === "points" ? "page" : undefined}
+            key={link.key}
+          >
+            {link.label}
+          </a>
+        ))}
+      </nav>
 
       <main className="points-main" id="dashboard">
         <section className="points-hero">
