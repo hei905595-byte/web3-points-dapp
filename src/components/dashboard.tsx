@@ -267,7 +267,7 @@ export function Dashboard() {
 
       try {
         const challenge = await pointsApi.getChallenge(nextAddress);
-        const signature = await signWalletMessage(kind, challenge.message);
+        const signature = await signWalletMessage(provider, challenge.message);
         const session = await pointsApi.verifyLogin(
           nextAddress,
           challenge.nonce,

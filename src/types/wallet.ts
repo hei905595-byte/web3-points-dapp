@@ -1,6 +1,7 @@
 export type WalletKind = "tronlink" | "tokenpocket";
 
 export interface TronProvider {
+  isTronLink?: boolean;
   ready?: boolean;
   defaultAddress?: {
     base58?: string;

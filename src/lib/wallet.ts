@@ -7,19 +7,27 @@ import type {
 function injectedTronWeb(kind: WalletKind): TronProvider | null {
   if (typeof window === "undefined") return null;
   if (kind === "tokenpocket") {
+    const isTokenPocketBrowser =
+      Boolean(window.tokenpocket || window.tp) ||
+      /TokenPocket/i.test(window.navigator.userAgent);
     return (
       window.tokenpocket?.tronWeb ??
       window.tp?.tronWeb ??
-      window.tronWeb ??
+      (isTokenPocketBrowser ? window.tronWeb : null) ??
       null
     );
   }
-  return window.tronWeb ?? null;
+  const isTokenPocketBrowser =
+    Boolean(window.tokenpocket || window.tp) ||
+    /TokenPocket/i.test(window.navigator.userAgent);
+  if (isTokenPocketBrowser) return null;
+  return window.tronLink ??
+    (window.tronWeb?.isTronLink ? window.tronWeb : null) ??
+    null;
 }
 
 export function getWalletProvider(kind: WalletKind): WalletProvider | null {
   if (typeof window === "undefined") return null;
-  if (kind === "tronlink") return window.tronLink ?? window.tronWeb ?? null;
   return injectedTronWeb(kind);
 }
 
@@ -53,14 +61,13 @@ export async function requestWalletAddress(
 }
 
 export async function signWalletMessage(
-  kind: WalletKind,
+  provider: WalletProvider,
   message: string,
 ): Promise<string> {
-  const tronWeb = injectedTronWeb(kind);
-  if (!tronWeb?.trx?.signMessageV2) {
+  if (!provider.trx?.signMessageV2) {
     throw new Error("The wallet does not support TRON message signing.");
   }
-  return await tronWeb.trx.signMessageV2(message);
+  return await provider.trx.signMessageV2(message);
 }
 
 export function shortenAddress(address: string) {
