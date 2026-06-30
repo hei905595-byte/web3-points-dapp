@@ -33,7 +33,10 @@ function gatewayUrl() {
     return process.env.NEXT_PUBLIC_GATEWAY_URL.replace(/\/$/, "");
   }
   if (typeof window !== "undefined") {
-    return `${window.location.protocol}//${window.location.hostname}:8787`;
+    if (/^(localhost|127\.0\.0\.1|192\.168\.|10\.)/.test(window.location.hostname)) {
+      return `${window.location.protocol}//${window.location.hostname}:8787`;
+    }
+    return "https://api.hbnest.pw/points-api";
   }
   return "http://localhost:8787";
 }
@@ -71,6 +74,9 @@ async function request<T>(
 }
 
 export const pointsApi = {
+  health() {
+    return request<{ ok: boolean; network: string; chainReadConfigured: boolean; chainWriteConfigured: boolean }>("/health");
+  },
   setSession(token: string) {
     sessionToken = token;
   },

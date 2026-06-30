@@ -117,7 +117,8 @@ export function Dashboard() {
   const [actionBusy, setActionBusy] = useState("");
   const [error, setError] = useState("");
   const [uiReady, setUiReady] = useState(false);
-  const [network, setNetwork] = useState<"TRON" | "OFFLINE">("OFFLINE");
+  const [network, setNetwork] = useState("OFFLINE");
+  const [chainWriteEnabled, setChainWriteEnabled] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardMember[]>([]);
   const [showAllTasks, setShowAllTasks] = useState(false);
   const [showFullLeaderboard, setShowFullLeaderboard] = useState(false);
@@ -136,6 +137,16 @@ export function Dashboard() {
       block: "start",
     });
   }
+
+  useEffect(() => {
+    pointsApi.health().then((health) => {
+      setNetwork(health.chainReadConfigured ? health.network : "OFFLINE");
+      setChainWriteEnabled(health.chainWriteConfigured);
+    }).catch(() => {
+      setNetwork("OFFLINE");
+      setChainWriteEnabled(false);
+    });
+  }, []);
 
   useEffect(() => {
     const timer =
@@ -264,7 +275,7 @@ export function Dashboard() {
         );
         pointsApi.setSession(session.token);
         setAddress(nextAddress);
-        setNetwork("TRON");
+        setNetwork((current) => current === "OFFLINE" ? "TRON" : current);
 
         setWalletModalOpen(false);
       } catch (caught) {
@@ -296,6 +307,10 @@ export function Dashboard() {
   const runTask = async (taskId: string) => {
     if (!address) {
       setWalletModalOpen(true);
+      return;
+    }
+    if (!chainWriteEnabled) {
+      setError("Nile contract writes are paused until the administrator signer is configured.");
       return;
     }
 
@@ -407,6 +422,7 @@ export function Dashboard() {
           <div className="points-hero-actions">
             <button
               className="points-primary"
+              disabled={isConnected && !chainWriteEnabled}
               onClick={() =>
                 isConnected ? runTask("daily-check-in") : setWalletModalOpen(true)
               }
@@ -444,7 +460,7 @@ export function Dashboard() {
           <article>
             <span>Network</span>
             <strong>{network}</strong>
-            <small>{isConnected ? "Wallet active" : "Ready"}</small>
+            <small>{isConnected ? (chainWriteEnabled ? "Wallet active" : "Read only") : "Ready"}</small>
           </article>
         </section>
 
@@ -481,7 +497,7 @@ export function Dashboard() {
                   <div className="points-task-action">
                     <strong>+{task.reward}</strong>
                     <button
-                      disabled={task.completed || actionBusy === task.id}
+                      disabled={task.completed || actionBusy === task.id || (isConnected && !chainWriteEnabled)}
                       onClick={() => runTask(task.id)}
                     >
                       {task.completed ? (

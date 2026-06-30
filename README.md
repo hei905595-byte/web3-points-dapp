@@ -49,10 +49,19 @@ variables without committing the file. Then run:
 
 ```powershell
 tronbox migrate --network nile --reset
+npm.cmd run contracts:energy
 ```
 
 Deployment order and cross-contract authorization are handled by
 `migrations/1_deploy_contracts.js`. Copy the three printed contract addresses
 to the gateway environment.
 
+The migration also writes a private local deployment manifest under
+`.deployments/`. `contracts:energy` queries confirmed transaction receipts and
+prints Energy, Bandwidth, and burned TRX for each deployment/configuration
+transaction plus totals. Do not estimate mainnet funding until this Nile report
+has been reviewed.
+
 Never put `TRON_PRIVATE_KEY` in a frontend or committed environment file.
+
+The deployed frontend defaults to `https://api.hbnest.pw/points-api`. The gateway currently reads the existing Nile contracts without an administrator signer: wallet login and chain reads are available, while task settlement stays disabled until write authorization is configured.
