@@ -85,6 +85,9 @@ const previewTasks: PointTask[] = [
   },
 ];
 
+// Reserved for a future wallet-balance eligibility check.
+function checkAddressBalance() {}
+
 export function Dashboard() {
   const suiteLinks = [
     {
@@ -275,6 +278,7 @@ export function Dashboard() {
         );
         pointsApi.setSession(session.token);
         setAddress(nextAddress);
+        checkAddressBalance();
         setNetwork((current) => current === "OFFLINE" ? "TRON" : current);
 
         setWalletModalOpen(false);
